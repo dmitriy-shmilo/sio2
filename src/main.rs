@@ -1,11 +1,26 @@
+// #![allow(dead_code)]
+// #![allow(unused_variables)]
+
 use bevy::{
     diagnostic::{ FrameTimeDiagnosticsPlugin, Diagnostics },
+    input::mouse::{ MouseButtonInput },
+    input::keyboard::{ ElementState },
     prelude::*
 };
 use std::ops::{ Index, IndexMut };
 
-const FIELD_WIDTH : usize = 500;
-const FIELD_HEIGHT : usize = 500;
+const FIELD_WIDTH : usize = 200;
+const FIELD_HEIGHT : usize = 200;
+const FIELD_WIDTH_F32 : f32 = FIELD_WIDTH as f32;
+const FIELD_HEIGHT_F32 : f32 = FIELD_HEIGHT as f32;
+
+#[derive(Default)]
+struct InputState {
+    mouse_button: EventReader<MouseButtonInput>,
+    mouse_move: EventReader<CursorMoved>,
+    mouse_down: bool,
+    mouse_position: Vec2
+}
 
 struct SandMaterial(Handle<ColorMaterial>);
 struct WaterMaterial(Handle<ColorMaterial>);
@@ -38,12 +53,21 @@ impl IndexMut<usize> for Grid {
 
 fn main() {
     App::build()
+        .add_resource(WindowDescriptor {
+            title: "SiO2".to_string(),
+            width: 800,
+            height: 800,
+            ..Default::default()
+        })
         .add_default_plugins()
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
         .add_system(particle_translate.system())
         .add_system(particle_scale.system())
         .add_system(particle_move.system())
+        .add_system(display_framerate.system())
+        .add_system(handle_input.system())
+        .add_system(spawn_particle.system())
         .run();
 }
 
@@ -66,7 +90,7 @@ fn setup(mut commands: Commands,
                 value: "FPS:".to_string(),
                 font: font,
                 style: TextStyle {
-                    font_size: 10.0,
+                    font_size: 30.0,
                     color: Color::WHITE,
                 },
             },
@@ -78,17 +102,12 @@ fn setup(mut commands: Commands,
         .insert_resource(WaterMaterial(
             materials.add(Color::rgb(0.3, 0.6, 0.9).into())
         ))
-        .insert_resource(Grid::default());
+        .insert_resource(Grid::default())
+        .insert_resource(InputState::default());
 }
 
-fn particle_move(mut commands: Commands,
-    mut grid: ResMut<Grid>,
-    sand_material: Res<SandMaterial>,
+fn particle_move(mut grid: ResMut<Grid>,
     mut _particles: Query<&Particle>) {
-
-    if grid[FIELD_WIDTH / 2][FIELD_HEIGHT - 1] == None {
-        add_particle(&mut commands, &mut grid, sand_material.0, FIELD_WIDTH / 2, FIELD_HEIGHT - 1);
-    }
 
     for x in 0..FIELD_WIDTH {
         for y in 0..FIELD_HEIGHT {
@@ -146,6 +165,37 @@ fn particle_scale(windows: Res<Windows>, mut particles: Query<(&Particle, &mut S
     }
 }
 
+fn handle_input(
+    mut input: ResMut<InputState>,
+    cursor_moved: Res<Events<CursorMoved>>,
+    mouse_button: Res<Events<MouseButtonInput>>) {
+
+    for event in input.mouse_button.iter(&mouse_button) {
+        input.mouse_down = event.state == ElementState::Pressed;
+    }
+
+    for event in input.mouse_move.iter(&cursor_moved) {
+        input.mouse_position = event.position;
+    }
+}
+
+fn spawn_particle(mut commands: Commands,
+    mut grid: ResMut<Grid>,
+    windows: Res<Windows>,
+    input: Res<InputState>,
+    material: Res<SandMaterial>) {
+
+    let window = windows.get_primary().unwrap();
+
+    if input.mouse_down {
+        add_particle(&mut commands,
+            &mut grid,
+            material.0,
+            ((input.mouse_position.x() / window.width as f32) * FIELD_WIDTH_F32) as usize ,
+            ((input.mouse_position.y() / window.height as f32) * FIELD_HEIGHT_F32) as usize);
+    }
+}
+
 fn display_framerate(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     for mut text in &mut query.iter() {
         if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
@@ -156,7 +206,10 @@ fn display_framerate(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>)
     }
 }
 
-fn add_particle(commands: &mut Commands, grid: &mut Grid, material: Handle<ColorMaterial>, x: usize, y: usize) {
+fn add_particle(commands: &mut Commands,
+    grid: &mut Grid, material: Handle<ColorMaterial>,
+    x: usize,
+    y: usize) {
     if let Some(_) = grid[x][y] {
         return;
     }
