@@ -14,14 +14,16 @@ const FIELD_HEIGHT_F32 : f32 = FIELD_HEIGHT as f32;
 #[derive(PartialEq)]
 enum Behavior {
     Static,
-    Solid
+    Solid,
+    Liquid
 }
 
 #[derive(PartialEq)]
 enum Tool {
     None,
     Concrete,
-    Sand
+    Sand,
+    Water
 }
 
 #[derive(Default)]
@@ -54,7 +56,19 @@ struct WaterMaterial(Handle<ColorMaterial>);
 struct ConcreteMaterial(Handle<ColorMaterial>);
 
 struct Particle {
-    behavior: Behavior
+    behavior: Behavior,
+    v: Vec2, // currently only used by liquids to track last direction,
+    is_moved: bool // track if particle has moved this frame
+}
+
+impl Default for Particle {
+    fn default() -> Self {
+        Particle {
+            behavior: Behavior::Static,
+            v: Vec2::zero(),
+            is_moved: false
+        }
+    }
 }
 
 struct Grid {
@@ -142,28 +156,63 @@ fn setup(mut commands: Commands,
 }
 
 fn particle_move(mut grid: ResMut<Grid>,
-    particles: Query<&Particle>) {
+    particles: Query<&mut Particle>) {
+
+    // TODO: replace this with double-buffered grid
+    for x in 0..FIELD_WIDTH {
+        for y in 0..FIELD_HEIGHT {
+            if let Some(entity) = grid[x][y] {
+                if let Ok(mut particle) = particles.get_mut::<Particle>(entity) {
+                    particle.is_moved = false;
+                }
+            }
+        }
+    }
 
     for x in 0..FIELD_WIDTH {
         for y in 0..FIELD_HEIGHT {
             if let Some(entity) = grid[x][y] {
-                if let Ok(particle) = particles.get::<Particle>(entity) {
-                    if particle.behavior == Behavior::Static {
+                if let Ok(mut particle) = particles.get_mut::<Particle>(entity) {
+                    if particle.behavior == Behavior::Static
+                        || particle.is_moved {
                         continue;
                     }
 
                     if y > 0 {
-                        let new_y = y - 1;
+                        // TODO: use Particle.v to decide next cell to occupy
+                        let (mut nx, mut ny) = (x, y);
 
-                        if grid[x][new_y] == None {
+                        if grid[x][y - 1] == None {
+                            ny = y - 1;
+                            particle.v.set_x(0.);
+                        } else if x > 0
+                            && grid[x - 1][y - 1] == None {
+                            ny = y - 1;
+                            nx = x - 1;
+                            particle.v.set_x(0.);
+                        } else if x < FIELD_WIDTH - 1
+                            && grid[x + 1][y - 1] == None {
+                            ny = y - 1;
+                            nx = x + 1;
+                            particle.v.set_x(0.);
+                        } else if particle.behavior == Behavior::Liquid {
+                            // liquids can shift to the side if bottom cells are busy
+                            if x > 0
+                                && grid[x - 1][y] == None
+                                && particle.v.x() <= 0. {
+                                nx = x - 1;
+                                particle.v.set_x(-1.);
+                            } else if x < FIELD_WIDTH - 1
+                                && grid[x + 1][y] == None {
+                                nx = x + 1;
+                                particle.v.set_x(1.);
+                            }
+                        }
+
+                        if x != nx || y != ny {
+                            particle.is_moved = true;
                             grid[x][y] = None;
-                            grid[x][new_y] = Some(entity);
-                        } else if x > 0 && grid[x - 1][new_y] == None {
-                            grid[x][y] = None;
-                            grid[x - 1][new_y] = Some(entity);
-                        } else if x < FIELD_WIDTH - 1 && grid[x + 1][new_y] == None {
-                            grid[x][y] = None;
-                            grid[x + 1][new_y] = Some(entity);
+                            grid[nx][ny] = Some(entity);
                         }
                     }
                 }
@@ -234,6 +283,7 @@ fn handle_input(
             tool_state.current_tool = match event.key_code {
                 Some(k) if k == KeyCode::Key1 => Tool::Concrete,
                 Some(k) if k == KeyCode::Key2 => Tool::Sand,
+                Some(k) if k == KeyCode::Key3 => Tool::Water,
                 _ => Tool::None
             }
         }
@@ -243,7 +293,8 @@ fn handle_input(
 fn spawn_particle(mut commands: Commands,
     mut grid: ResMut<Grid>,
     tool: Res<ToolState>,
-    (concrete, sand): (Res<ConcreteMaterial>, Res<SandMaterial>)) {
+    // investigate using assets instead of a bunch of individual resources
+    (concrete, sand, water): (Res<ConcreteMaterial>, Res<SandMaterial>, Res<WaterMaterial>)) {
 
     if tool.is_spawning {
         add_particle(&mut commands,
@@ -251,11 +302,14 @@ fn spawn_particle(mut commands: Commands,
             Particle { behavior: 
                 match tool.current_tool {
                     Tool::Concrete => Behavior::Static,
+                    Tool::Water => Behavior::Liquid,
                     _ => Behavior::Solid
-                }
+                },
+                ..Default::default()
             },
             match tool.current_tool {
                 Tool::Concrete => concrete.0,
+                Tool::Water => water.0,
                 _ => sand.0
             },
             tool.grid_x,
