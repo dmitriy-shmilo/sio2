@@ -1,10 +1,7 @@
-// #![allow(dead_code)]
-// #![allow(unused_variables)]
-
 use bevy::{
     diagnostic::{ FrameTimeDiagnosticsPlugin, Diagnostics },
     input::mouse::{ MouseButtonInput },
-    input::keyboard::{ ElementState },
+    input::keyboard::{ KeyboardInput, ElementState },
     prelude::*
 };
 use std::ops::{ Index, IndexMut };
@@ -14,17 +11,51 @@ const FIELD_HEIGHT : usize = 200;
 const FIELD_WIDTH_F32 : f32 = FIELD_WIDTH as f32;
 const FIELD_HEIGHT_F32 : f32 = FIELD_HEIGHT as f32;
 
+#[derive(PartialEq)]
+enum Behavior {
+    Static,
+    Solid
+}
+
+#[derive(PartialEq)]
+enum Tool {
+    None,
+    Concrete,
+    Sand
+}
+
 #[derive(Default)]
 struct InputState {
     mouse_button: EventReader<MouseButtonInput>,
     mouse_move: EventReader<CursorMoved>,
-    mouse_down: bool,
-    mouse_position: Vec2
+    keyboard: EventReader<KeyboardInput>
+}
+
+struct ToolState {
+    current_tool: Tool,
+    is_spawning: bool,
+    grid_x: usize,
+    grid_y: usize
+}
+
+impl Default for ToolState {
+    fn default() -> Self {
+        ToolState {
+            current_tool: Tool::None,
+            is_spawning: false,
+            grid_x: 0,
+            grid_y: 0
+        }
+    }
 }
 
 struct SandMaterial(Handle<ColorMaterial>);
 struct WaterMaterial(Handle<ColorMaterial>);
-struct Particle;
+struct ConcreteMaterial(Handle<ColorMaterial>);
+
+struct Particle {
+    behavior: Behavior
+}
 
 struct Grid {
     particles: Vec<Option<Entity>>
@@ -99,31 +130,41 @@ fn setup(mut commands: Commands,
         .insert_resource(SandMaterial(
             materials.add(Color::rgb(0.8, 0.6, 0.3).into())
         ))
+        .insert_resource(ConcreteMaterial(
+            materials.add(Color::rgb(0.7, 0.8, 0.8).into())
+        ))
         .insert_resource(WaterMaterial(
             materials.add(Color::rgb(0.3, 0.6, 0.9).into())
         ))
         .insert_resource(Grid::default())
+        .insert_resource(ToolState::default())
         .insert_resource(InputState::default());
 }
 
 fn particle_move(mut grid: ResMut<Grid>,
-    mut _particles: Query<&Particle>) {
+    particles: Query<&Particle>) {
 
     for x in 0..FIELD_WIDTH {
         for y in 0..FIELD_HEIGHT {
-            if let Some(particle) = grid[x][y] {
-                if y > 0 {
-                    let new_y = y - 1;
+            if let Some(entity) = grid[x][y] {
+                if let Ok(particle) = particles.get::<Particle>(entity) {
+                    if particle.behavior == Behavior::Static {
+                        continue;
+                    }
 
-                    if grid[x][new_y] == None {
-                        grid[x][y] = None;
-                        grid[x][new_y] = Some(particle);
-                    } else if x > 0 && grid[x - 1][new_y] == None {
-                        grid[x][y] = None;
-                        grid[x - 1][new_y] = Some(particle);
-                    } else if x < FIELD_WIDTH - 1 && grid[x + 1][new_y] == None {
-                        grid[x][y] = None;
-                        grid[x + 1][new_y] = Some(particle);
+                    if y > 0 {
+                        let new_y = y - 1;
+
+                        if grid[x][new_y] == None {
+                            grid[x][y] = None;
+                            grid[x][new_y] = Some(entity);
+                        } else if x > 0 && grid[x - 1][new_y] == None {
+                            grid[x][y] = None;
+                            grid[x - 1][new_y] = Some(entity);
+                        } else if x < FIELD_WIDTH - 1 && grid[x + 1][new_y] == None {
+                            grid[x][y] = None;
+                            grid[x + 1][new_y] = Some(entity);
+                        }
                     }
                 }
             }
@@ -153,7 +194,9 @@ fn particle_translate(windows: Res<Windows>, grid: Res<Grid>, particles: Query<(
     }
 }
 
-fn particle_scale(windows: Res<Windows>, mut particles: Query<(&Particle, &mut Sprite)>) {
+fn particle_scale(windows: Res<Windows>,
+    mut particles: Query<(&Particle, &mut Sprite)>) {
+
     // TODO: don't run if window wasn't resized
     let window = windows.get_primary().unwrap();
 
@@ -166,33 +209,58 @@ fn particle_scale(windows: Res<Windows>, mut particles: Query<(&Particle, &mut S
 }
 
 fn handle_input(
+    mut tool_state: ResMut<ToolState>,
     mut input: ResMut<InputState>,
+    windows: Res<Windows>,
     cursor_moved: Res<Events<CursorMoved>>,
-    mouse_button: Res<Events<MouseButtonInput>>) {
+    mouse_button: Res<Events<MouseButtonInput>>,
+    key_pressed: Res<Events<KeyboardInput>>) {
+
+    let window = windows.get_primary().unwrap();
 
     for event in input.mouse_button.iter(&mouse_button) {
-        input.mouse_down = event.state == ElementState::Pressed;
+        tool_state.is_spawning = event.state == ElementState::Pressed;
     }
 
     for event in input.mouse_move.iter(&cursor_moved) {
-        input.mouse_position = event.position;
+        let x = ((event.position.x() / window.width as f32) * FIELD_WIDTH_F32) as usize;
+        let y = ((event.position.y() / window.height as f32) * FIELD_HEIGHT_F32) as usize;
+        tool_state.grid_x = x;
+        tool_state.grid_y = y;
+    }
+
+    for event in input.keyboard.iter(&key_pressed) {
+        if event.state.is_pressed() {
+            tool_state.current_tool = match event.key_code {
+                Some(k) if k == KeyCode::Key1 => Tool::Concrete,
+                Some(k) if k == KeyCode::Key2 => Tool::Sand,
+                _ => Tool::None
+            }
+        }
     }
 }
 
 fn spawn_particle(mut commands: Commands,
     mut grid: ResMut<Grid>,
-    windows: Res<Windows>,
-    input: Res<InputState>,
-    material: Res<SandMaterial>) {
+    tool: Res<ToolState>,
+    (concrete, sand): (Res<ConcreteMaterial>, Res<SandMaterial>)) {
 
-    let window = windows.get_primary().unwrap();
-
-    if input.mouse_down {
+    if tool.is_spawning {
         add_particle(&mut commands,
             &mut grid,
-            material.0,
-            ((input.mouse_position.x() / window.width as f32) * FIELD_WIDTH_F32) as usize ,
-            ((input.mouse_position.y() / window.height as f32) * FIELD_HEIGHT_F32) as usize);
+            Particle { behavior: 
+                match tool.current_tool {
+                    Tool::Concrete => Behavior::Static,
+                    _ => Behavior::Solid
+                }
+            },
+            match tool.current_tool {
+                Tool::Concrete => concrete.0,
+                _ => sand.0
+            },
+            tool.grid_x,
+            tool.grid_y
+            );
     }
 }
 
@@ -207,7 +275,9 @@ fn display_framerate(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>)
 }
 
 fn add_particle(commands: &mut Commands,
-    grid: &mut Grid, material: Handle<ColorMaterial>,
+    grid: &mut Grid,
+    particle: Particle,
+    material: Handle<ColorMaterial>,
     x: usize,
     y: usize) {
     if let Some(_) = grid[x][y] {
@@ -219,7 +289,7 @@ fn add_particle(commands: &mut Commands,
             material: material,
             ..Default::default()
         })
-        .with(Particle);
+        .with(particle);
 
     grid[x][y] = commands.current_entity();
 }
