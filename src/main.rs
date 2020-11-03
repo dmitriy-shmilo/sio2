@@ -1,11 +1,16 @@
+
 use bevy::{
     diagnostic::{ FrameTimeDiagnosticsPlugin, Diagnostics },
     input::mouse::{ MouseButtonInput },
     input::keyboard::{ KeyboardInput, ElementState },
-    prelude::*
+    prelude::*,
+    render::texture::{ TextureFormat }
 };
+
 use std::ops::{ Index, IndexMut };
 
+const WINDOW_HEIGHT : u32 = 800;
+const WINDOW_WIDTH : u32 = 800;
 const FIELD_WIDTH : usize = 200;
 const FIELD_HEIGHT : usize = 200;
 const FIELD_WIDTH_F32 : f32 = FIELD_WIDTH as f32;
@@ -51,10 +56,6 @@ impl Default for ToolState {
     }
 }
 
-struct SandMaterial(Handle<ColorMaterial>);
-struct WaterMaterial(Handle<ColorMaterial>);
-struct ConcreteMaterial(Handle<ColorMaterial>);
-
 struct Particle {
     behavior: Behavior,
     v: Vec2, // currently only used by liquids to track last direction,
@@ -70,6 +71,26 @@ impl Default for Particle {
         }
     }
 }
+
+struct Pixel {
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8
+}
+
+impl Pixel {
+    fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Pixel {
+            r,
+            g,
+            b,
+            a
+        }
+    }
+}
+
+struct GridTexture;
 
 struct Grid {
     particles: Vec<Option<Entity>>
@@ -100,14 +121,14 @@ fn main() {
     App::build()
         .add_resource(WindowDescriptor {
             title: "SiO2".to_string(),
-            width: 800,
-            height: 800,
+            width: WINDOW_HEIGHT,
+            height: WINDOW_WIDTH,
             ..Default::default()
         })
         .add_default_plugins()
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
-        .add_system(particle_translate.system())
+        .add_system(particle_render.system())
         .add_system(particle_scale.system())
         .add_system(particle_move.system())
         .add_system(display_framerate.system())
@@ -118,11 +139,19 @@ fn main() {
 
 fn setup(mut commands: Commands, 
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>) {
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut textures: ResMut<Assets<Texture>>) {
 
     let font = asset_server
         .load("assets/fonts/FiraSans-Bold.ttf")
         .unwrap();
+
+    let texture = Texture::new_fill(
+        Vec2::new(FIELD_WIDTH_F32, FIELD_HEIGHT_F32),
+        &[0, 0, 0, 0],
+        TextureFormat::Rgba8Unorm
+    );
+    let th = textures.add(texture);
 
     commands.spawn(Camera2dComponents::default())
         .spawn(UiCameraComponents::default())
@@ -141,18 +170,19 @@ fn setup(mut commands: Commands,
             },
             ..Default::default()
         })
-        .insert_resource(SandMaterial(
-            materials.add(Color::rgb(0.8, 0.6, 0.3).into())
-        ))
-        .insert_resource(ConcreteMaterial(
-            materials.add(Color::rgb(0.7, 0.8, 0.8).into())
-        ))
-        .insert_resource(WaterMaterial(
-            materials.add(Color::rgb(0.3, 0.6, 0.9).into())
-        ))
         .insert_resource(Grid::default())
         .insert_resource(ToolState::default())
-        .insert_resource(InputState::default());
+        .insert_resource(InputState::default())
+        .spawn(SpriteComponents {
+            material: materials.add(th.into()),
+            transform: Transform::from_translation_rotation_scale(
+                Vec3::new(0., 0., 0.),
+                Quat::identity(),
+                WINDOW_WIDTH as f32 / FIELD_WIDTH_F32
+            ),
+            ..Default::default()
+        })
+        .with(GridTexture);
 }
 
 fn particle_move(mut grid: ResMut<Grid>,
@@ -221,39 +251,59 @@ fn particle_move(mut grid: ResMut<Grid>,
     }
 }
 
-fn particle_translate(windows: Res<Windows>, grid: Res<Grid>, particles: Query<(&Particle, &mut Transform)>) {
-    fn convert(p: f32, bound_window: f32, bound_game: f32) -> f32 {
-        p / bound_game * bound_window - (bound_window / 2.)
+fn particle_render(
+    grid: Res<Grid>,
+    materials: Res<Assets<ColorMaterial>>,
+    mut textures: ResMut<Assets<Texture>>,
+    particle_query: Query<(&Pixel, &Particle)>,
+    mut texture_query: Query<(&GridTexture, &Handle<ColorMaterial>)>) {
+
+    let mut handle = Handle::<Texture>::new();
+    for (_, material) in &mut texture_query.iter() {
+        if let Some(material) = materials.get(material) {
+            if let Some(texture_handle) = material.texture {
+                handle = texture_handle;
+                break;
+            }
+        }
     }
 
-    let window = windows.get_primary().unwrap();
+    let field_texture = textures.get_mut(&handle).unwrap();
 
     for x in 0..FIELD_WIDTH {
         for y in 0..FIELD_HEIGHT {
-            if let Some(particle) = grid[x][y] {
-                if let Ok(mut transform) = particles.get_mut::<Transform>(particle) {
-                    transform.set_translation(Vec3::new(
-                        convert(x as f32, window.width as f32, FIELD_WIDTH as f32),
-                        convert(y as f32, window.height as f32, FIELD_HEIGHT as f32),
-                        0.0,
-                    ))
+            let offset = (x + (FIELD_HEIGHT - y - 1) * FIELD_WIDTH) * 4;
+
+            if let Some(entity) = grid[x][y] {
+                if let Ok(pix) = particle_query.get::<Pixel>(entity) {
+                    field_texture.data[offset] = pix.r;
+                    field_texture.data[offset + 1] = pix.g;
+                    field_texture.data[offset + 2] = pix.b;
+                    field_texture.data[offset + 3] = pix.a;
                 }
+            } else {
+                field_texture.data[offset] = 255;
+                field_texture.data[offset + 1] = 255;
+                field_texture.data[offset + 2] = 255;
+                field_texture.data[offset + 3] = 120;
             }
         }
     }
 }
 
 fn particle_scale(windows: Res<Windows>,
-    mut particles: Query<(&Particle, &mut Sprite)>) {
+    mut query: Query<(&Sprite, &mut Transform)>) {
 
     // TODO: don't run if window wasn't resized
     let window = windows.get_primary().unwrap();
+    let scale = if window.width < window.height {
+        window.width as f32 / FIELD_WIDTH_F32
+    } else {
+        window.height as f32 / FIELD_HEIGHT_F32
+    };
 
-    for (_, mut sprite) in &mut particles.iter() {
-        sprite.size = Vec2::new(
-            window.width as f32 / FIELD_WIDTH as f32,
-            window.height as f32 / FIELD_HEIGHT as f32
-        );
+    for (_, mut trans) in &mut query.iter() {
+        trans.set_scale(scale);
     }
 }
 
@@ -266,16 +316,37 @@ fn handle_input(
     key_pressed: Res<Events<KeyboardInput>>) {
 
     let window = windows.get_primary().unwrap();
+    let scale = if window.width < window.height {
+        window.width as f32 / FIELD_WIDTH_F32
+    } else {
+        window.height as f32 / FIELD_HEIGHT_F32
+    };
+    let (gw, gh) = (scale * FIELD_WIDTH_F32, scale * FIELD_HEIGHT_F32);
+    let (pw, ph) = ((window.width as f32 - gw) / 2.,
+        (window.height as f32 - gh) / 2.);
+
+    let (left, top, right, bottom) = (
+        pw,
+        window.height as f32 - ph,
+        window.width as f32 - pw,
+        ph
+    );
 
     for event in input.mouse_button.iter(&mouse_button) {
         tool_state.is_spawning = event.state == ElementState::Pressed;
     }
 
     for event in input.mouse_move.iter(&cursor_moved) {
-        let x = ((event.position.x() / window.width as f32) * FIELD_WIDTH_F32) as usize;
-        let y = ((event.position.y() / window.height as f32) * FIELD_HEIGHT_F32) as usize;
-        tool_state.grid_x = x;
-        tool_state.grid_y = y;
+        let x = event.position.x();
+        let y = event.position.y();
+        if x > left && x < right && y > bottom && y < top {
+            let x = (((event.position.x() - left) / scale)) as usize;
+            let y = (((event.position.y() - bottom) / scale)) as usize;
+            tool_state.grid_x = x;
+            tool_state.grid_y = y;
+        } else {
+            tool_state.is_spawning = false;
+        }
     }
 
     for event in input.keyboard.iter(&key_pressed) {
@@ -292,10 +363,7 @@ fn handle_input(
 
 fn spawn_particle(mut commands: Commands,
     mut grid: ResMut<Grid>,
-    tool: Res<ToolState>,
-    // investigate using assets instead of a bunch of individual resources
-    (concrete, sand, water): (Res<ConcreteMaterial>, Res<SandMaterial>, Res<WaterMaterial>)) {
-
+    tool: Res<ToolState>) {
     if tool.is_spawning {
         add_particle(&mut commands,
             &mut grid,
@@ -308,9 +376,9 @@ fn spawn_particle(mut commands: Commands,
                 ..Default::default()
             },
             match tool.current_tool {
-                Tool::Concrete => concrete.0,
-                Tool::Water => water.0,
-                _ => sand.0
+                Tool::Concrete => Pixel::new(210, 204, 204, 255),
+                Tool::Water => Pixel::new(73, 153, 230, 255),
+                _ => Pixel::new(204, 153, 73, 255)
             },
             tool.grid_x,
             tool.grid_y
@@ -331,7 +399,7 @@ fn display_framerate(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>)
 fn add_particle(commands: &mut Commands,
     grid: &mut Grid,
     particle: Particle,
-    material: Handle<ColorMaterial>,
+    pixel: Pixel,
     x: usize,
     y: usize) {
     if let Some(_) = grid[x][y] {
@@ -339,11 +407,7 @@ fn add_particle(commands: &mut Commands,
     }
 
     commands
-        .spawn(SpriteComponents {
-            material: material,
-            ..Default::default()
-        })
-        .with(particle);
+        .spawn((pixel, particle));
 
     grid[x][y] = commands.current_entity();
 }
