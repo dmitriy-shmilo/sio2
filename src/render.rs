@@ -40,7 +40,8 @@ pub fn grid_render(
         for y in 0..FIELD_HEIGHT {
             let offset = (x + (FIELD_HEIGHT - y - 1) * FIELD_WIDTH) * 4;
 
-            if let Some(entity) = grid[x][y] {
+            // TODO: grid[(x, y)] wraps coordinates, which is useless in this scenario
+            if let Some(entity) = grid[(x as i32, y as i32)] {
                 if let Ok(pix) = particle_query.get::<Pixel>(entity) {
                     field_texture.data[offset] = pix.r;
                     field_texture.data[offset + 1] = pix.g;

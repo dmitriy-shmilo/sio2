@@ -124,8 +124,8 @@ pub fn spawn_particle(mut commands: Commands,
                 Tool::Water => Pixel::new(73, 153, 230, 255),
                 _ => Pixel::new(204, 153, 73, 255)
             },
-            tool.grid_x,
-            tool.grid_y
+            tool.grid_x as i32,
+            tool.grid_y as i32
             );
     }
 }
@@ -135,14 +135,14 @@ fn add_particle(commands: &mut Commands,
     grid: &mut Grid,
     particle: Particle,
     pixel: Pixel,
-    x: usize,
-    y: usize) {
-    if let Some(_) = grid[x][y] {
+    x: i32,
+    y: i32) {
+    if let Some(_) = grid[(x, y)] {
         return;
     }
 
     commands
         .spawn((pixel, particle));
 
-    grid[x][y] = commands.current_entity();
+    grid[(x, y)] = commands.current_entity();
 }
