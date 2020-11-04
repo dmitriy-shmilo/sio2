@@ -7,16 +7,16 @@ use crate::{
 use bevy::prelude::*;
 
 #[derive(PartialEq)]
-enum Behavior {
+pub enum Behavior {
     Static,
     Solid,
     Liquid
 }
 
 pub struct Particle {
-    behavior: Behavior,
-    v: Vec2, // currently only used by liquids to track last direction,
-    is_moved: bool // track if particle has moved this frame
+    pub behavior: Behavior,
+    pub v: Vec2, // currently only used by liquids to track last direction,
+    pub is_moved: bool // track if particle has moved this frame
 }
 
 impl Default for Particle {

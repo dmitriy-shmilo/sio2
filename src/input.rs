@@ -4,10 +4,12 @@ use crate::{
 };
 
 use crate::{
+    physics::{ 
+        Particle,
+        Behavior
+    },
     grid::Grid,
-    Pixel,
-    Particle,
-    Behavior
+    Pixel
 };
 
 use bevy::{

@@ -7,8 +7,8 @@ use crate::{
 
 use crate::{
     grid::Grid,
-    Pixel,
-    Particle
+    physics::Particle,
+    Pixel
 };
 
 use bevy::{
