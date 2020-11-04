@@ -45,6 +45,8 @@ pub fn grid_update(mut grid: ResMut<Grid>,
 
     for x in 0..FIELD_WIDTH as i32 {
         for y in 0..FIELD_HEIGHT as i32 {
+            // TODO: x and y are always within grid bounds
+            // there's no need to use expensive wrapped indexing
             if let Some(entity) = grid[(x, y)] {
                 if let Ok(mut particle) = particles.get_mut(entity) {
                     if particle.behavior == Behavior::Static
@@ -79,7 +81,9 @@ pub fn grid_update(mut grid: ResMut<Grid>,
                     }
 
                     if x != nx || y != ny {
-                        particle.is_moved = true;
+                        // if particle warps to the other side,
+                        // give it a chance to move again
+                        particle.is_moved = ny >= 0;
                         grid[(x, y)] = None;
                         grid[(nx, ny)] = Some(entity);
                     }
