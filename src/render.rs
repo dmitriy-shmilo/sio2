@@ -17,7 +17,7 @@ use bevy::{
 
 pub struct GridTexture;
 
-pub fn particle_render(
+pub fn grid_render(
     grid: Res<Grid>,
     materials: Res<Assets<ColorMaterial>>,
     mut textures: ResMut<Assets<Texture>>,
@@ -57,7 +57,7 @@ pub fn particle_render(
     }
 }
 
-pub fn particle_scale(windows: Res<Windows>,
+pub fn grid_scale(windows: Res<Windows>,
     mut query: Query<(&Sprite, &mut Transform)>) {
 
     // TODO: don't run if window wasn't resized

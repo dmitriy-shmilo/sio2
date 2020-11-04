@@ -29,7 +29,7 @@ impl Default for Particle {
     }
 }
 
-pub fn particle_move(mut grid: ResMut<Grid>,
+pub fn grid_update(mut grid: ResMut<Grid>,
     particles: Query<&mut Particle>) {
 
     // TODO: replace this with double-buffered grid

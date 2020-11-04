@@ -6,10 +6,10 @@ mod physics;
 
 use crate::{
     input::{ ToolState, InputState, spawn_particle, handle_input},
-    render::{ GridTexture, particle_scale, particle_render },
+    render::{ GridTexture, grid_scale, grid_render },
     grid::Grid,
     framerate::display_framerate,
-    physics::particle_move
+    physics::grid_update
 };
 
 use bevy::{
@@ -55,9 +55,9 @@ fn main() {
         .add_default_plugins()
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
-        .add_system(particle_render.system())
-        .add_system(particle_scale.system())
-        .add_system(particle_move.system())
+        .add_system(grid_render.system())
+        .add_system(grid_scale.system())
+        .add_system(grid_update.system())
         .add_system(display_framerate.system())
         .add_system(handle_input.system())
         .add_system(spawn_particle.system())
