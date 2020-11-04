@@ -23,7 +23,8 @@ pub enum Tool {
     None,
     Concrete,
     Sand,
-    Water
+    Water,
+    Eraser
 }
 
 #[derive(Default)]
@@ -99,6 +100,7 @@ pub fn handle_input(
                 Some(k) if k == KeyCode::Key1 => Tool::Concrete,
                 Some(k) if k == KeyCode::Key2 => Tool::Sand,
                 Some(k) if k == KeyCode::Key3 => Tool::Water,
+                Some(k) if k == KeyCode::Key0 => Tool::Eraser,
                 _ => Tool::None
             }
         }
@@ -109,6 +111,15 @@ pub fn spawn_particle(mut commands: Commands,
     mut grid: ResMut<Grid>,
     tool: Res<ToolState>) {
     if tool.is_spawning {
+        let (x, y) = (tool.grid_x as i32, tool.grid_y as i32);
+        if tool.current_tool == Tool::Eraser {
+            if let Some(entity) = grid[(x, y)] {
+                commands.despawn(entity);
+                grid[(x, y)] = None;
+            }
+            return;
+        }
+
         add_particle(&mut commands,
             &mut grid,
             Particle { behavior: 
@@ -120,9 +131,8 @@ pub fn spawn_particle(mut commands: Commands,
                 ..Default::default()
             },
             get_color(tool.current_tool),
-            tool.grid_x as i32,
-            tool.grid_y as i32
-            );
+            x,
+            y);
     }
 }
 
