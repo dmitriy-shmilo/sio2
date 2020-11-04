@@ -89,7 +89,7 @@ fn setup(mut commands: Commands,
             },
             text: Text {
                 value: "FPS:".to_string(),
-                font: font,
+                font,
                 style: TextStyle {
                     font_size: 30.0,
                     color: Color::WHITE,

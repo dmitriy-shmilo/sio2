@@ -84,8 +84,8 @@ pub fn handle_input(
         let x = event.position.x();
         let y = event.position.y();
         if x > left && x < right && y > bottom && y < top {
-            let x = (((event.position.x() - left) / scale)) as usize;
-            let y = (((event.position.y() - bottom) / scale)) as usize;
+            let x = ((event.position.x() - left) / scale) as usize;
+            let y = ((event.position.y() - bottom) / scale) as usize;
             tool_state.grid_x = x;
             tool_state.grid_y = y;
         } else {
@@ -137,7 +137,7 @@ fn add_particle(commands: &mut Commands,
     pixel: Pixel,
     x: i32,
     y: i32) {
-    if let Some(_) = grid[(x, y)] {
+    if grid[(x, y)].is_some() {
         return;
     }
 

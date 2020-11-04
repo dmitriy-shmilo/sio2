@@ -39,6 +39,9 @@ impl IndexMut<(i32, i32)> for Grid {
     }
 }
 
+// Fits `i` into `lower..upper` range, wrapping its value around
+// if necessary.
+// See https://stackoverflow.com/a/707426/575979
 #[inline]
 fn wrap(mut i: i32, lower: i32, upper: i32) -> i32 {
     let range_size = upper - lower;
@@ -47,7 +50,7 @@ fn wrap(mut i: i32, lower: i32, upper: i32) -> i32 {
         i += range_size * ((lower - i) / range_size + 1);
     }
 
-    return lower + (i - lower) % range_size;
+    lower + (i - lower) % range_size
 }
 
 #[cfg(test)]
