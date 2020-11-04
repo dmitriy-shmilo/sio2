@@ -30,13 +30,13 @@ impl Default for Particle {
 }
 
 pub fn grid_update(mut grid: ResMut<Grid>,
-    particles: Query<&mut Particle>) {
+    mut particles: Query<&mut Particle>) {
 
     // TODO: replace this with double-buffered grid
     for x in 0..FIELD_WIDTH as i32 {
         for y in 0..FIELD_HEIGHT as i32 {
             if let Some(entity) = grid[(x, y)] {
-                if let Ok(mut particle) = particles.get_mut::<Particle>(entity) {
+                if let Ok(mut particle) = particles.get_mut(entity) {
                     particle.is_moved = false;
                 }
             }
@@ -46,7 +46,7 @@ pub fn grid_update(mut grid: ResMut<Grid>,
     for x in 0..FIELD_WIDTH as i32 {
         for y in 0..FIELD_HEIGHT as i32 {
             if let Some(entity) = grid[(x, y)] {
-                if let Ok(mut particle) = particles.get_mut::<Particle>(entity) {
+                if let Ok(mut particle) = particles.get_mut(entity) {
                     if particle.behavior == Behavior::Static
                         || particle.is_moved {
                         continue;

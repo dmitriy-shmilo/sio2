@@ -33,7 +33,7 @@ fn main() {
             height: WINDOW_WIDTH,
             ..Default::default()
         })
-        .add_default_plugins()
+        .add_plugins(DefaultPlugins)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
         .add_system(grid_render.system())
@@ -51,8 +51,7 @@ fn setup(mut commands: Commands,
     mut textures: ResMut<Assets<Texture>>) {
 
     let font = asset_server
-        .load("assets/fonts/FiraSans-Bold.ttf")
-        .unwrap();
+        .load("fonts/FiraSans-Bold.ttf");
 
     let texture = Texture::new_fill(
         Vec2::new(FIELD_WIDTH_F32, FIELD_HEIGHT_F32),
@@ -83,11 +82,6 @@ fn setup(mut commands: Commands,
         .insert_resource(InputState::default())
         .spawn(SpriteComponents {
             material: materials.add(th.into()),
-            transform: Transform::from_translation_rotation_scale(
-                Vec3::new(0., 0., 0.),
-                Quat::identity(),
-                WINDOW_WIDTH as f32 / FIELD_WIDTH_F32
-            ),
             ..Default::default()
         })
         .with(GridTexture);

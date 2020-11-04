@@ -7,13 +7,16 @@ use crate::{
     },
     grid::Grid
 };
-
 use bevy::{
-    input::mouse::{ MouseButtonInput },
-    input::keyboard::{ KeyboardInput, ElementState },
+    input::{
+        ElementState,
+        mouse::MouseButtonInput,
+        keyboard::KeyboardInput
+    },
     prelude::*
 };
 use rand::seq::SliceRandom;
+use lazy_static::lazy_static;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum Tool {
@@ -57,19 +60,19 @@ pub fn handle_input(
     key_pressed: Res<Events<KeyboardInput>>) {
 
     let window = windows.get_primary().unwrap();
-    let scale = if window.width < window.height {
-        window.width as f32 / FIELD_WIDTH_F32
+    let scale = if window.width() < window.height() {
+        window.width() as f32 / FIELD_WIDTH_F32
     } else {
-        window.height as f32 / FIELD_HEIGHT_F32
+        window.height() as f32 / FIELD_HEIGHT_F32
     };
     let (gw, gh) = (scale * FIELD_WIDTH_F32, scale * FIELD_HEIGHT_F32);
-    let (pw, ph) = ((window.width as f32 - gw) / 2.,
-        (window.height as f32 - gh) / 2.);
+    let (pw, ph) = ((window.width() as f32 - gw) / 2.,
+        (window.height() as f32 - gh) / 2.);
 
     let (left, top, right, bottom) = (
         pw,
-        window.height as f32 - ph,
-        window.width as f32 - pw,
+        window.height() as f32 - ph,
+        window.width() as f32 - pw,
         ph
     );
 
@@ -123,42 +126,18 @@ pub fn spawn_particle(mut commands: Commands,
     }
 }
 
+lazy_static!{
+    static ref SAND_COLORS: Vec<Color> = vec![
+        Color::rgb(0.96, 0.74, 0.53),
+        Color::rgb(0.95, 0.89, 0.5),
+        Color::rgb(0.92, 0.91, 0.72)
+    ];
 
-static SAND_COLORS: &[Color] = &[
-    Color {
-        r: 0.96,
-        g: 0.74,
-        b: 0.53,
-        a: 1.0
-    },
-    Color {
-        r: 0.95,
-        g: 0.89,
-        b: 0.5,
-        a: 1.0
-    },
-    Color {
-        r: 0.92,
-        g: 0.91,
-        b: 0.72,
-        a: 1.0
-    }
-];
-
-static WATER_COLORS: &[Color] = &[
-    Color {
-        r: 0.21,
-        g: 0.58,
-        b: 0.74,
-        a: 1.0
-    },
-    Color {
-        r: 0.3,
-        g: 0.67,
-        b: 0.81,
-        a: 1.0
-    }
-];
+    static ref WATER_COLORS: Vec<Color> = vec![
+        Color::rgb(0.21, 0.58, 0.74),
+        Color::rgb(0.3, 0.67, 0.81)
+    ];
+}
 
 fn get_color(tool: Tool) -> Color {
 
