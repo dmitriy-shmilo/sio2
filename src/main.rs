@@ -25,25 +25,6 @@ const FIELD_HEIGHT : usize = 200;
 const FIELD_WIDTH_F32 : f32 = FIELD_WIDTH as f32;
 const FIELD_HEIGHT_F32 : f32 = FIELD_HEIGHT as f32;
 
-// TODO: this struct can be replaced with bevy::prelude::Color
-pub struct Pixel {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8
-}
-
-impl Pixel {
-    fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Pixel {
-            r,
-            g,
-            b,
-            a
-        }
-    }
-}
-
 fn main() {
     App::build()
         .add_resource(WindowDescriptor {

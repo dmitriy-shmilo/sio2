@@ -1,15 +1,11 @@
 use crate::{
     FIELD_WIDTH_F32,
-    FIELD_HEIGHT_F32
-};
-
-use crate::{
+    FIELD_HEIGHT_F32,
     physics::{ 
         Particle,
         Behavior
     },
-    grid::Grid,
-    Pixel
+    grid::Grid
 };
 
 use bevy::{
@@ -17,8 +13,9 @@ use bevy::{
     input::keyboard::{ KeyboardInput, ElementState },
     prelude::*
 };
+use rand::seq::SliceRandom;
 
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Tool {
     None,
     Concrete,
@@ -119,11 +116,7 @@ pub fn spawn_particle(mut commands: Commands,
                 },
                 ..Default::default()
             },
-            match tool.current_tool {
-                Tool::Concrete => Pixel::new(210, 204, 204, 255),
-                Tool::Water => Pixel::new(73, 153, 230, 255),
-                _ => Pixel::new(204, 153, 73, 255)
-            },
+            get_color(tool.current_tool),
             tool.grid_x as i32,
             tool.grid_y as i32
             );
@@ -131,10 +124,56 @@ pub fn spawn_particle(mut commands: Commands,
 }
 
 
+static SAND_COLORS: &[Color] = &[
+    Color {
+        r: 0.96,
+        g: 0.74,
+        b: 0.53,
+        a: 1.0
+    },
+    Color {
+        r: 0.95,
+        g: 0.89,
+        b: 0.5,
+        a: 1.0
+    },
+    Color {
+        r: 0.92,
+        g: 0.91,
+        b: 0.72,
+        a: 1.0
+    }
+];
+
+static WATER_COLORS: &[Color] = &[
+    Color {
+        r: 0.21,
+        g: 0.58,
+        b: 0.74,
+        a: 1.0
+    },
+    Color {
+        r: 0.3,
+        g: 0.67,
+        b: 0.81,
+        a: 1.0
+    }
+];
+
+fn get_color(tool: Tool) -> Color {
+
+    let mut rng = rand::thread_rng();
+    match tool {
+        Tool::Concrete => Color::rgb(0.58, 0.6, 0.59),
+        Tool::Water => *WATER_COLORS.choose(&mut rng).unwrap(),
+        _ => *SAND_COLORS.choose(&mut rng).unwrap()
+    }
+}
+
 fn add_particle(commands: &mut Commands,
     grid: &mut Grid,
     particle: Particle,
-    pixel: Pixel,
+    color: Color,
     x: i32,
     y: i32) {
     if grid[(x, y)].is_some() {
@@ -142,7 +181,7 @@ fn add_particle(commands: &mut Commands,
     }
 
     commands
-        .spawn((pixel, particle));
+        .spawn((color, particle));
 
     grid[(x, y)] = commands.current_entity();
 }

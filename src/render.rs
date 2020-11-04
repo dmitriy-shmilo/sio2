@@ -7,12 +7,18 @@ use crate::{
 
 use crate::{
     grid::Grid,
-    physics::Particle,
-    Pixel
+    physics::Particle
 };
 
 use bevy::{
     prelude::*
+};
+
+static BACKGROUND_COLOR : Color = Color {
+    r: 0.11,
+    g: 0.11,
+    b: 0.11,
+    a: 1.0
 };
 
 pub struct GridTexture;
@@ -21,7 +27,7 @@ pub fn grid_render(
     grid: Res<Grid>,
     materials: Res<Assets<ColorMaterial>>,
     mut textures: ResMut<Assets<Texture>>,
-    particle_query: Query<(&Pixel, &Particle)>,
+    particle_query: Query<(&Color, &Particle)>,
     mut texture_query: Query<(&GridTexture, &Handle<ColorMaterial>)>) {
 
     let mut handle = Handle::<Texture>::new();
@@ -42,17 +48,17 @@ pub fn grid_render(
 
             // TODO: grid[(x, y)] wraps coordinates, which is useless in this scenario
             if let Some(entity) = grid[(x as i32, y as i32)] {
-                if let Ok(pix) = particle_query.get::<Pixel>(entity) {
-                    field_texture.data[offset] = pix.r;
-                    field_texture.data[offset + 1] = pix.g;
-                    field_texture.data[offset + 2] = pix.b;
-                    field_texture.data[offset + 3] = pix.a;
+                if let Ok(pix) = particle_query.get::<Color>(entity) {
+                    field_texture.data[offset] = (pix.r * 255.99) as u8;
+                    field_texture.data[offset + 1] = (pix.g * 255.99) as u8;
+                    field_texture.data[offset + 2] = (pix.b * 255.99) as u8;
+                    field_texture.data[offset + 3] = (pix.a * 255.99) as u8;
                 }
             } else {
-                field_texture.data[offset] = 255;
-                field_texture.data[offset + 1] = 255;
-                field_texture.data[offset + 2] = 255;
-                field_texture.data[offset + 3] = 120;
+                field_texture.data[offset] = (BACKGROUND_COLOR.r * 255.99) as u8;
+                field_texture.data[offset + 1] = (BACKGROUND_COLOR.g * 255.99) as u8;
+                field_texture.data[offset + 2] = (BACKGROUND_COLOR.b * 255.99) as u8;
+                field_texture.data[offset + 3] = (BACKGROUND_COLOR.a * 255.99) as u8;
             }
         }
     }
