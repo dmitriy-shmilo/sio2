@@ -6,19 +6,24 @@ use crate::{
 };
 use crate::{
     grid::Grid,
-    physics::Particle
+    physics::Particle,
+    input::{ Tool, ToolState },
+    util::wrap
 };
 use bevy::prelude::*;
 use lazy_static::lazy_static;
+use std::cmp::max;
 
 lazy_static! {
-    static ref BACKGROUND_COLOR : Color = Color::rgb(0.11, 0.11, 0.11);
+    static ref BACKGROUND_COLOR: Color = Color::rgb(0.11, 0.11, 0.11);
 }
+const BRUSH_SHADOW_MOD: u8 = 50;
 
 pub struct GridTexture;
 
 pub fn grid_render(
     grid: Res<Grid>,
+    tool: Res<ToolState>,
     materials: Res<Assets<ColorMaterial>>,
     mut textures: ResMut<Assets<Texture>>,
     particle_query: Query<(&Color, &Particle)>,
@@ -54,6 +59,23 @@ pub fn grid_render(
                 field_texture.data[offset + 1] = (BACKGROUND_COLOR.g() * 255.99) as u8;
                 field_texture.data[offset + 2] = (BACKGROUND_COLOR.b() * 255.99) as u8;
                 field_texture.data[offset + 3] = (BACKGROUND_COLOR.a() * 255.99) as u8;
+            }
+        }
+    }
+
+    if tool.current_tool != Tool::None {
+        let (cx, cy) = (tool.grid_x as i32, tool.grid_y as i32);
+
+        for x in cx - tool.tool_size..=cx + tool.tool_size {
+            for y in cy - tool.tool_size..=cy + tool.tool_size {
+                let x = wrap(x, 0, FIELD_WIDTH as i32) as usize;
+                let y = wrap(y, 0, FIELD_HEIGHT as i32) as usize;
+                let offset = (x + (FIELD_HEIGHT - y - 1) * FIELD_WIDTH) * 4;
+
+                for o in offset..offset + 3 {
+                    field_texture.data[o] = max(0,
+                        field_texture.data[o] - BRUSH_SHADOW_MOD);
+                }
             }
         }
     }

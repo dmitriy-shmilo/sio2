@@ -3,6 +3,7 @@ mod render;
 mod grid;
 mod input;
 mod physics;
+mod util;
 
 use crate::{
     input::{ Tool, ToolState, InputState, spawn_particle, handle_input},
