@@ -134,7 +134,7 @@ pub fn spawn_particle(mut commands: Commands,
                         commands.despawn(entity);
                         grid[(x, y)] = None;
                     }
-                    return;
+                    continue;
                 }
 
                 add_particle(&mut commands,
