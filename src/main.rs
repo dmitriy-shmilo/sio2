@@ -5,7 +5,7 @@ mod input;
 mod physics;
 
 use crate::{
-    input::{ ToolState, InputState, spawn_particle, handle_input},
+    input::{ Tool, ToolState, InputState, spawn_particle, handle_input},
     render::{ GridTexture, grid_scale, grid_render },
     grid::Grid,
     framerate::display_framerate,
@@ -78,7 +78,10 @@ fn setup(mut commands: Commands,
             ..Default::default()
         })
         .insert_resource(Grid::default())
-        .insert_resource(ToolState::default())
+        .insert_resource(ToolState {
+            current_tool: Tool::Sand,
+            ..Default::default()
+        })
         .insert_resource(InputState::default())
         .spawn(SpriteComponents {
             material: materials.add(th.into()),

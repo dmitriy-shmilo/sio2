@@ -17,8 +17,9 @@ use bevy::{
 };
 use rand::seq::SliceRandom;
 use lazy_static::lazy_static;
+use std::cmp::{ min, max };
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Tool {
     None,
     Concrete,
@@ -34,17 +35,20 @@ pub struct InputState {
     keyboard: EventReader<KeyboardInput>
 }
 
+#[derive(Debug)]
 pub struct ToolState {
-    current_tool: Tool,
-    is_spawning: bool,
-    grid_x: usize,
-    grid_y: usize
+    pub current_tool: Tool,
+    pub tool_size: i32,
+    pub is_spawning: bool,
+    pub grid_x: usize,
+    pub grid_y: usize
 }
 
 impl Default for ToolState {
     fn default() -> Self {
         ToolState {
             current_tool: Tool::None,
+            tool_size: 0,
             is_spawning: false,
             grid_x: 0,
             grid_y: 0
@@ -96,13 +100,23 @@ pub fn handle_input(
 
     for event in input.keyboard.iter(&key_pressed) {
         if event.state.is_pressed() {
+            if event.key_code == Some(KeyCode::Equals) {
+                tool_state.tool_size = min(tool_state.tool_size + 1, 3);
+                continue;
+            }
+
+            if event.key_code == Some(KeyCode::Minus) {
+                tool_state.tool_size = max(tool_state.tool_size - 1, 0);
+                continue;
+            }
+
             tool_state.current_tool = match event.key_code {
                 Some(k) if k == KeyCode::Key1 => Tool::Concrete,
                 Some(k) if k == KeyCode::Key2 => Tool::Sand,
                 Some(k) if k == KeyCode::Key3 => Tool::Water,
                 Some(k) if k == KeyCode::Key0 => Tool::Eraser,
-                _ => Tool::None
-            }
+                _ => tool_state.current_tool
+            };
         }
     }
 }
@@ -110,29 +124,34 @@ pub fn handle_input(
 pub fn spawn_particle(mut commands: Commands,
     mut grid: ResMut<Grid>,
     tool: Res<ToolState>) {
-    if tool.is_spawning {
-        let (x, y) = (tool.grid_x as i32, tool.grid_y as i32);
-        if tool.current_tool == Tool::Eraser {
-            if let Some(entity) = grid[(x, y)] {
-                commands.despawn(entity);
-                grid[(x, y)] = None;
-            }
-            return;
-        }
+    if tool.is_spawning && tool.current_tool != Tool::None {
+        let (cx, cy) = (tool.grid_x as i32, tool.grid_y as i32);
 
-        add_particle(&mut commands,
-            &mut grid,
-            Particle { behavior: 
-                match tool.current_tool {
-                    Tool::Concrete => Behavior::Static,
-                    Tool::Water => Behavior::Liquid,
-                    _ => Behavior::Solid
-                },
-                ..Default::default()
-            },
-            get_color(tool.current_tool),
-            x,
-            y);
+        for x in cx - tool.tool_size..=cx + tool.tool_size {
+            for y in cy - tool.tool_size..=cy + tool.tool_size {
+                if tool.current_tool == Tool::Eraser {
+                    if let Some(entity) = grid[(x, y)] {
+                        commands.despawn(entity);
+                        grid[(x, y)] = None;
+                    }
+                    return;
+                }
+
+                add_particle(&mut commands,
+                    &mut grid,
+                    Particle { behavior: 
+                        match tool.current_tool {
+                            Tool::Concrete => Behavior::Static,
+                            Tool::Water => Behavior::Liquid,
+                            _ => Behavior::Solid
+                        },
+                        ..Default::default()
+                    },
+                    get_color(tool.current_tool),
+                    x,
+                    y);
+            }
+        }
     }
 }
 
