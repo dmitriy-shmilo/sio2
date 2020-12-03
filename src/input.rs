@@ -6,7 +6,8 @@ use crate::{
         Position,
         Behavior
     },
-    grid::Grid
+    grid::Grid,
+    gui::FpsState
 };
 use bevy::{
     input::{
@@ -63,7 +64,8 @@ pub fn handle_input(
     windows: Res<Windows>,
     cursor_moved: Res<Events<CursorMoved>>,
     mouse_button: Res<Events<MouseButtonInput>>,
-    key_pressed: Res<Events<KeyboardInput>>) {
+    key_pressed: Res<Events<KeyboardInput>>,
+    mut fps_state: Query<&mut FpsState>) {
 
     let window = windows.get_primary().unwrap();
     let scale = if window.width() < window.height() {
@@ -118,6 +120,14 @@ pub fn handle_input(
                 Some(k) if k == KeyCode::Key0 => Tool::Eraser,
                 _ => tool_state.current_tool
             };
+
+            // toggle FPS when H key is pressed
+            for mut fps_state in fps_state.iter_mut() {
+                fps_state.is_visible = match event.key_code {
+                    Some(k) if k == KeyCode::H => !fps_state.is_visible,
+                    _ => fps_state.is_visible
+                }
+            }
         }
     }
 }

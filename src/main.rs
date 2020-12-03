@@ -9,7 +9,7 @@ use crate::{
     input::{ Tool, ToolState, InputState, spawn_particle, handle_input},
     render::{ GridTexture, grid_scale, grid_render },
     grid::Grid,
-    gui::display_framerate,
+    gui::{ FpsState, display_framerate },
     physics::grid_update,
     util::window_size_to_scale
 };
@@ -82,6 +82,7 @@ fn setup(mut commands: Commands,
             },
             ..Default::default()
         })
+        .with(FpsState::default())
         .insert_resource(Grid::default())
         .insert_resource(ToolState {
             current_tool: Tool::Sand,
