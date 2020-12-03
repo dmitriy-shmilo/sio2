@@ -1,10 +1,10 @@
 use crate::{
-    FIELD_WIDTH,
-    FIELD_HEIGHT,
+    FIELD_WIDTH_F32,
+    FIELD_HEIGHT_F32,
     grid::Grid
 };
-
 use bevy::prelude::*;
+use lazy_static::lazy_static;
 
 #[derive(PartialEq)]
 pub enum Behavior {
@@ -15,80 +15,126 @@ pub enum Behavior {
 
 pub struct Particle {
     pub behavior: Behavior,
-    pub v: Vec2, // currently only used by liquids to track last direction,
-    pub is_moved: bool // track if particle has moved this frame
+    pub v: Vec2
+}
+
+pub struct Position {
+    pub pos: Vec2
+}
+
+lazy_static! {
+    static ref GRAVITY: Vec2 = Vec2::new(0., -2. / 60.);
+    static ref MAX_V: Vec2 = Vec2::new(0., 8.);
+}
+
+impl Position {
+    pub fn new(x: f32, y: f32) -> Self {
+        Position {
+            pos: Vec2::new(x, y)
+        }
+    }
 }
 
 impl Default for Particle {
     fn default() -> Self {
         Particle {
             behavior: Behavior::Static,
-            v: Vec2::zero(),
-            is_moved: false
+            v: Vec2::zero()
+        }
+    }
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Position {
+            pos: Vec2::new(f32::NAN, f32::NAN)
         }
     }
 }
 
 pub fn grid_update(mut grid: ResMut<Grid>,
-    mut particles: Query<&mut Particle>) {
+    mut particles: Query<(&mut Particle, &mut Position, Entity)>) {
+    for (mut particle, mut position, entity) in particles.iter_mut() {
 
-    // TODO: replace this with double-buffered grid
-    for x in 0..FIELD_WIDTH as i32 {
-        for y in 0..FIELD_HEIGHT as i32 {
-            if let Some(entity) = grid[(x, y)] {
-                if let Ok(mut particle) = particles.get_mut(entity) {
-                    particle.is_moved = false;
-                }
+        if particle.behavior == Behavior::Static {
+            continue;
+        }
+
+        // floating point position for smooth falling
+        let mut pos = position.pos;
+        let mut v = particle.v;
+
+        // source grid coordinates
+        let (sx, sy) = (pos.x().round() as i32, pos.y().round() as i32);
+
+        v += *GRAVITY;
+
+        if v.y() < -MAX_V.y() {
+            v.set_y(-MAX_V.y());
+        } else if v.y() > MAX_V.y() {
+            v.set_y(MAX_V.y());
+        }
+
+        pos += particle.v;
+
+        // target grid coordinates, where the particle wants to go
+        let (_tx, ty) = (pos.x().round() as i32, pos.y().round() as i32);
+        // current grid coordinates, where the particle will actually end up
+        let (mut cx, mut cy) = (sx, ty);
+
+        // fall down, but check if there are any obstacles on the way
+        // TODO: implement upward movement
+        let mut obstacle = None;
+        for y in (ty..sy).rev() {
+            if let Some(e) = grid[(sx, y)] {
+                obstacle = Some(e);
+                cy = y + 1;
+                break;
             }
         }
-    }
 
-    for x in 0..FIELD_WIDTH as i32 {
-        for y in 0..FIELD_HEIGHT as i32 {
-            // TODO: x and y are always within grid bounds
-            // there's no need to use expensive wrapped indexing
-            if let Some(entity) = grid[(x, y)] {
-                if let Ok(mut particle) = particles.get_mut(entity) {
-                    if particle.behavior == Behavior::Static
-                        || particle.is_moved {
-                        continue;
-                    }
-
-                    // TODO: use Particle.v to decide next cell to occupy
-                    let (mut nx, mut ny) = (x, y);
-
-                    if grid[(x, y - 1)] == None {
-                        ny = y - 1;
-                        particle.v.set_x(0.);
-                    } else if grid[(x - 1, y - 1)] == None {
-                        ny = y - 1;
-                        nx = x - 1;
-                        particle.v.set_x(0.);
-                    } else if grid[(x + 1, y - 1)] == None {
-                        ny = y - 1;
-                        nx = x + 1;
-                        particle.v.set_x(0.);
-                    } else if particle.behavior == Behavior::Liquid {
-                        // liquids can shift to the side if bottom cells are busy
-                        if grid[(x - 1, y)] == None
-                            && particle.v.x() <= 0. {
-                            nx = x - 1;
-                            particle.v.set_x(-1.);
-                        } else if grid[(x + 1, y)] == None {
-                            nx = x + 1;
-                            particle.v.set_x(1.);
-                        }
-                    }
-
-                    if x != nx || y != ny {
-                        // if particle warps to the other side,
-                        // give it a chance to move again
-                        particle.is_moved = ny >= 0;
-                        grid[(x, y)] = None;
-                        grid[(nx, ny)] = Some(entity);
-                    }
+        if obstacle != None {
+            // attempt to drop diagonally
+            if grid[(cx - 1, cy - 1)] == None {
+                cx -= 1;
+                cy -= 1;
+            } else if grid[(cx + 1, cy - 1)] == None {
+                cx += 1;
+                cy -= 1;
+            } else if particle.behavior == Behavior::Liquid {
+                // TODO: find a way to read and modify obstacle's velocity
+                v = Vec2::zero();
+                
+                // liquids can attempt to move sideways
+                if grid[(cx - 1, cy)] == None {
+                    cx -= 1;
+                } else if grid[(cx + 1, cy)] == None {
+                    cx += 1;
                 }
+            } else {
+                // TODO: find a way to read and modify obstacle's velocity
+                v = Vec2::zero();
+            }
+
+            pos.set_x(cx as f32);
+            pos.set_y(cy as f32);
+        } else {
+            if pos.x() < 0.0 {
+                pos.set_x(FIELD_WIDTH_F32 + pos.x());
+            } else if pos.x() > FIELD_WIDTH_F32 {
+                pos.set_x(pos.x() - FIELD_WIDTH_F32);
+            }
+
+            if pos.y() < 0.0 {
+                pos.set_y(FIELD_HEIGHT_F32 + pos.y());
+            } else if pos.y() > FIELD_HEIGHT_F32 {
+                pos.set_y(pos.y() - FIELD_HEIGHT_F32);
             }
         }
+
+        particle.v = v;
+        position.pos = pos;
+        grid[(sx, sy)] = None;
+        grid[(cx, cy)] = Some(entity);
     }
 }

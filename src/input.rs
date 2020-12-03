@@ -3,6 +3,7 @@ use crate::{
     FIELD_HEIGHT_F32,
     physics::{ 
         Particle,
+        Position,
         Behavior
     },
     grid::Grid
@@ -184,12 +185,10 @@ fn add_particle(commands: &mut Commands,
     color: Color,
     x: i32,
     y: i32) {
-    if grid[(x, y)].is_some() {
-        return;
-    }
 
-    commands
-        .spawn((color, particle));
+    commands.spawn((particle,
+        color,
+        Position::new(x as f32, y as f32)));
 
     grid[(x, y)] = commands.current_entity();
 }
