@@ -1,8 +1,7 @@
 use crate::{
     FIELD_WIDTH,
     FIELD_HEIGHT,
-    FIELD_WIDTH_F32,
-    FIELD_HEIGHT_F32
+    window_size_to_scale
 };
 use crate::{
     grid::Grid,
@@ -10,7 +9,10 @@ use crate::{
     input::{ Tool, ToolState },
     util::wrap
 };
-use bevy::prelude::*;
+use bevy::{
+    window::WindowResized,
+    prelude::*
+};
 use lazy_static::lazy_static;
 
 
@@ -79,18 +81,24 @@ pub fn grid_render(
     }
 }
 
-pub fn grid_scale(windows: Res<Windows>,
+pub fn grid_scale(resize_event: Res<Events<WindowResized>>,
     mut query: Query<(&Sprite, &mut Transform)>) {
 
-    // TODO: don't run if window wasn't resized
-    let window = windows.get_primary().unwrap();
-    let scale = if window.width() < window.height() {
-        window.width() as f32 / FIELD_WIDTH_F32
-    } else {
-        window.height() as f32 / FIELD_HEIGHT_F32
-    };
+    let mut reader = resize_event.get_reader();
+    let (mut width, mut height) = (0, 0);
+
+    for e in reader.iter(&resize_event) {
+        width = e.width;
+        height = e.height;
+    }
+
+    if width + height == 0 {
+        return;
+    }
+
+    let scale = Vec3::splat(window_size_to_scale(width, height));
 
     for (_, mut trans) in &mut query.iter_mut() {
-        trans.scale = Vec3::splat(scale);
+        trans.scale = scale;
     }
 }

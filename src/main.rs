@@ -10,7 +10,8 @@ use crate::{
     render::{ GridTexture, grid_scale, grid_render },
     grid::Grid,
     framerate::display_framerate,
-    physics::grid_update
+    physics::grid_update,
+    util::window_size_to_scale
 };
 
 use bevy::{
@@ -61,6 +62,9 @@ fn setup(mut commands: Commands,
     );
     let th = textures.add(texture);
 
+    let scale = Vec3::splat(window_size_to_scale(WINDOW_WIDTH as usize,
+        WINDOW_HEIGHT as usize));
+
     commands.spawn(Camera2dComponents::default())
         .spawn(UiCameraComponents::default())
         .spawn(TextComponents {
@@ -86,6 +90,10 @@ fn setup(mut commands: Commands,
         .insert_resource(InputState::default())
         .spawn(SpriteComponents {
             material: materials.add(th.into()),
+            transform: Transform {
+                scale: scale,
+                ..Default::default()
+            },
             ..Default::default()
         })
         .with(GridTexture);

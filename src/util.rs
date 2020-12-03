@@ -1,6 +1,11 @@
 // Fits `i` into `lower..upper` range, wrapping its value around
 // if necessary.
 // See https://stackoverflow.com/a/707426/575979
+use crate::{
+    FIELD_WIDTH_F32,
+    FIELD_HEIGHT_F32
+};
+
 #[inline]
 pub fn wrap(mut i: i32, lower: i32, upper: i32) -> i32 {
     let range_size = upper - lower;
@@ -10,6 +15,19 @@ pub fn wrap(mut i: i32, lower: i32, upper: i32) -> i32 {
     }
 
     lower + (i - lower) % range_size
+}
+
+#[inline]
+pub fn window_size_to_scale(width: usize, height: usize) -> f32 {
+
+    if width <= 0 || height <= 0 {
+        1.
+    } else if width < height {
+        width as f32 / FIELD_WIDTH_F32
+    } else {
+        height as f32 / FIELD_HEIGHT_F32
+    }
+
 }
 
 #[cfg(test)]
