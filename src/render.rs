@@ -12,12 +12,11 @@ use crate::{
 };
 use bevy::prelude::*;
 use lazy_static::lazy_static;
-use std::cmp::max;
+
 
 lazy_static! {
     static ref BACKGROUND_COLOR: Color = Color::rgb(0.11, 0.11, 0.11);
 }
-const BRUSH_SHADOW_MOD: u8 = 50;
 
 pub struct GridTexture;
 
@@ -73,8 +72,7 @@ pub fn grid_render(
                 let offset = (x + (FIELD_HEIGHT - y - 1) * FIELD_WIDTH) * 4;
 
                 for o in offset..offset + 3 {
-                    field_texture.data[o] = max(0,
-                        field_texture.data[o] - BRUSH_SHADOW_MOD);
+                    field_texture.data[o] = field_texture.data[o] / 2;
                 }
             }
         }
