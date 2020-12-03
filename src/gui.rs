@@ -9,7 +9,7 @@ pub struct FpsState {
 
 impl Default for FpsState {
     fn default() -> Self {
-        return FpsState {
+        FpsState {
             is_visible: false
         }
     }

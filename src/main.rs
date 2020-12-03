@@ -92,7 +92,7 @@ fn setup(mut commands: Commands,
         .spawn(SpriteComponents {
             material: materials.add(th.into()),
             transform: Transform {
-                scale: scale,
+                scale,
                 ..Default::default()
             },
             ..Default::default()

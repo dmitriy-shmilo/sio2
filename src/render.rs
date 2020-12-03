@@ -74,7 +74,7 @@ pub fn grid_render(
                 let offset = (x + (FIELD_HEIGHT - y - 1) * FIELD_WIDTH) * 4;
 
                 for o in offset..offset + 3 {
-                    field_texture.data[o] = field_texture.data[o] / 2;
+                    field_texture.data[o] /= 2;
                 }
             }
         }

@@ -20,7 +20,7 @@ pub fn wrap(mut i: i32, lower: i32, upper: i32) -> i32 {
 #[inline]
 pub fn window_size_to_scale(width: usize, height: usize) -> f32 {
 
-    if width <= 0 || height <= 0 {
+    if width == 0 || height == 0 {
         1.
     } else if width < height {
         width as f32 / FIELD_WIDTH_F32
