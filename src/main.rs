@@ -1,4 +1,4 @@
-mod framerate;
+mod gui;
 mod render;
 mod grid;
 mod input;
@@ -9,7 +9,7 @@ use crate::{
     input::{ Tool, ToolState, InputState, spawn_particle, handle_input},
     render::{ GridTexture, grid_scale, grid_render },
     grid::Grid,
-    framerate::display_framerate,
+    gui::display_framerate,
     physics::grid_update,
     util::window_size_to_scale
 };
