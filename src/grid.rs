@@ -19,9 +19,17 @@ impl Default for Grid {
     }
 }
 
+impl Index<usize> for Grid {
+    type Output = [Option<Entity>];
+
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.particles[idx * FIELD_HEIGHT..idx * FIELD_HEIGHT + FIELD_WIDTH]
+    }
+}
+
 impl Index<(i32, i32)> for Grid {
     type Output = Option<Entity>;
-    fn index(&self, idx: (i32, i32)) -> &Option<Entity> {
+    fn index(&self, idx: (i32, i32)) -> &Self::Output {
 
         let x = wrap(idx.0, 0, FIELD_WIDTH as i32) as usize;
         let y = wrap(idx.1, 0, FIELD_HEIGHT as i32) as usize;
