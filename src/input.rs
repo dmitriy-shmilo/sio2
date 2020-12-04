@@ -196,6 +196,10 @@ fn add_particle(commands: &mut Commands,
     x: i32,
     y: i32) {
 
+    if grid[(x, y)] != None {
+        return;
+    }
+
     commands.spawn((particle,
         color,
         Position::new(x as f32, y as f32)));
