@@ -83,21 +83,16 @@ pub fn grid_render(
 pub fn grid_scale(resize_event: Res<Events<WindowResized>>,
     mut query: Query<(&Sprite, &mut Transform)>) {
 
-    let mut reader = resize_event.get_reader();
-    let (mut width, mut height) = (0, 0);
+    let window_resize = resize_event
+        .get_reader()
+        .iter(&resize_event)
+        .map(|event| (event.width, event.height))
+        .last();
 
-    for e in reader.iter(&resize_event) {
-        width = e.width;
-        height = e.height;
-    }
-
-    if width + height == 0 {
-        return;
-    }
-
-    let scale = Vec3::splat(window_size_to_scale(width, height));
-
-    for (_, mut trans) in &mut query.iter_mut() {
-        trans.scale = scale;
+    if let Some((width, height)) = window_resize {
+        let scale = Vec3::splat(window_size_to_scale(width, height));
+        for (_, mut trans) in &mut query.iter_mut() {
+             trans.scale = scale;
+        }
     }
 }
