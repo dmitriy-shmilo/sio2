@@ -1,20 +1,12 @@
 use crate::{
-    FIELD_WIDTH,
-    FIELD_HEIGHT,
-    window_size_to_scale
-};
-use crate::{
     grid::Grid,
+    input::{Tool, ToolState},
     physics::Particle,
-    input::{ Tool, ToolState },
-    util::wrap
+    util::wrap,
 };
-use bevy::{
-    window::WindowResized,
-    prelude::*
-};
+use crate::{window_size_to_scale, FIELD_HEIGHT, FIELD_WIDTH};
+use bevy::{prelude::*, window::WindowResized};
 use lazy_static::lazy_static;
-
 
 lazy_static! {
     static ref BACKGROUND_COLOR: Color = Color::rgb(0.11, 0.11, 0.11);
@@ -28,8 +20,8 @@ pub fn grid_render(
     materials: Res<Assets<ColorMaterial>>,
     mut textures: ResMut<Assets<Texture>>,
     particle_query: Query<(&Color, &Particle)>,
-    texture_query: Query<(&GridTexture, &Handle<ColorMaterial>)>) {
-
+    texture_query: Query<(&GridTexture, &Handle<ColorMaterial>)>,
+) {
     let mut handle = None;
     for (_, material) in &mut texture_query.iter() {
         if let Some(material) = materials.get(material) {
@@ -41,27 +33,31 @@ pub fn grid_render(
     }
 
     let field_texture = textures.get_mut(handle.unwrap()).unwrap();
-
-    for x in 0..FIELD_WIDTH {
-        for y in 0..FIELD_HEIGHT {
-            let offset = (x + (FIELD_HEIGHT - y - 1) * FIELD_WIDTH) * 4;
-
-            if let Some(entity) = grid[y][x] {
-                if let Ok(entity) = particle_query.get(entity) {
-                    let pix = entity.0;
-                    field_texture.data[offset] = (pix.r() * 255.99) as u8;
-                    field_texture.data[offset + 1] = (pix.g() * 255.99) as u8;
-                    field_texture.data[offset + 2] = (pix.b() * 255.99) as u8;
-                    field_texture.data[offset + 3] = (pix.a() * 255.99) as u8;
-                }
-            } else {
-                field_texture.data[offset] = (BACKGROUND_COLOR.r() * 255.99) as u8;
-                field_texture.data[offset + 1] = (BACKGROUND_COLOR.g() * 255.99) as u8;
-                field_texture.data[offset + 2] = (BACKGROUND_COLOR.b() * 255.99) as u8;
-                field_texture.data[offset + 3] = (BACKGROUND_COLOR.a() * 255.99) as u8;
-            }
+    let bg = grid.background_color;
+    {
+        let (r, g, b, a) = (
+            (bg.r() * 255.99) as u8,
+            (bg.g() * 255.99) as u8,
+            (bg.b() * 255.99) as u8,
+            (bg.a() * 255.99) as u8,
+        );
+        let slc = [r, g, b, a];
+        for pixel in field_texture.data.chunks_exact_mut(4) {
+            pixel.copy_from_slice(&slc);
         }
     }
+    for ((x, y), e) in grid.iter() {
+        let offset = (*x as usize + (grid.ysize - *y as usize - 1) * grid.xsize) * 4;
+
+        if let Ok(entity) = particle_query.get(*e) {
+            let pix = entity.0;
+            field_texture.data[offset] = (pix.r() * 255.99) as u8;
+            field_texture.data[offset + 1] = (pix.g() * 255.99) as u8;
+            field_texture.data[offset + 2] = (pix.b() * 255.99) as u8;
+            field_texture.data[offset + 3] = (pix.a() * 255.99) as u8;
+        }
+    }
+
 
     if tool.current_tool != Tool::None {
         let (cx, cy) = (tool.grid_x as i32, tool.grid_y as i32);
@@ -80,9 +76,10 @@ pub fn grid_render(
     }
 }
 
-pub fn grid_scale(resize_event: Res<Events<WindowResized>>,
-    mut query: Query<(&Sprite, &mut Transform)>) {
-
+pub fn grid_scale(
+    resize_event: Res<Events<WindowResized>>,
+    mut query: Query<(&Sprite, &mut Transform)>,
+) {
     let window_resize = resize_event
         .get_reader()
         .iter(&resize_event)
@@ -92,7 +89,7 @@ pub fn grid_scale(resize_event: Res<Events<WindowResized>>,
     if let Some((width, height)) = window_resize {
         let scale = Vec3::splat(window_size_to_scale(width, height));
         for (_, mut trans) in &mut query.iter_mut() {
-             trans.scale = scale;
+            trans.scale = scale;
         }
     }
 }
