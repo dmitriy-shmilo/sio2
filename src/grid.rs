@@ -46,6 +46,14 @@ impl Grid {
             self.particles.remove(&idx);
         }
     }
+    // non pub as invalid index will cause panic on rendering texture
+    fn set_non_wrapping(&mut self, x: i32 ,y: i32 , value: Option<Entity>) {
+        if let Some(e) = value {
+            self.particles.insert((x , y), e);
+        } else {
+            self.particles.remove(&(x , y));
+        }
+    }
     pub fn remove(&mut self, x: i32, y: i32) -> Option<Entity> {
         self.particles.remove(&self.wrap_index(x, y))
     }
@@ -53,9 +61,10 @@ impl Grid {
         if (x1, y1) == (x2, y2) {
             return;
         }
-        let e1 = self.get(x1, y1);
-        let e2 = self.get(x2, y2);
-        self.set(x2, y2, e1);
-        self.set(x1, y1, e2);
+        let (idx1 , idx2) = (self.wrap_index(x1 , y1) , self.wrap_index(x2 , y2));
+        let e1 = self.particles.get(&idx1).copied();
+        let e2 = self.particles.get(&idx2).copied();
+        self.set_non_wrapping(idx2.0 , idx2.1, e1);
+        self.set_non_wrapping(idx1.0 , idx1.1, e2);
     }
 }
