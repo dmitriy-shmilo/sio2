@@ -190,6 +190,15 @@ fn add_particle(
     }
 
     commands.spawn((particle, color, Position::new(x as f32, y as f32)));
+    if let Some(e) = commands.current_entity(){
+        let rgba = [
+            (color.r() * 255.99) as u8,
+            (color.g() * 255.99) as u8,
+            (color.b() * 255.99) as u8,
+            (color.a() * 255.99) as u8,
 
-    grid.set(x, y, commands.current_entity());
+        ];
+        grid.set(x , y , (e , rgba));
+    }
+
 }

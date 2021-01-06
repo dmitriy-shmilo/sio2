@@ -1,6 +1,5 @@
 use crate::{grid::Grid, FIELD_HEIGHT_F32, FIELD_WIDTH_F32};
 use bevy::prelude::*;
-use lazy_static::lazy_static;
 
 #[derive(PartialEq)]
 pub enum Behavior {
@@ -18,10 +17,9 @@ pub struct Position {
     pub pos: Vec2,
 }
 
-lazy_static! {
-    static ref GRAVITY: Vec2 = Vec2::new(0., -2. / 60.);
-    static ref MAX_V: Vec2 = Vec2::new(0., 8.);
-}
+const GRAVITY: Vec2 = bevy::math::const_vec2!([0. , -2. / 60.]);
+const MAX_V: Vec2 = bevy::math::const_vec2!([0. , 8.]);
+
 
 impl Position {
     pub fn new(x: f32, y: f32) -> Self {
@@ -64,7 +62,7 @@ pub fn grid_update(
         // source grid coordinates
         let (sx, sy) = (pos.x().round() as i32, pos.y().round() as i32);
 
-        v += *GRAVITY;
+        v += GRAVITY;
 
         if v.y() < -MAX_V.y() {
             v.set_y(-MAX_V.y());

@@ -35,27 +35,19 @@ pub fn grid_render(
     let field_texture = textures.get_mut(handle.unwrap()).unwrap();
     let bg = grid.background_color;
     {
-        let (r, g, b, a) = (
+        let slc = [
             (bg.r() * 255.99) as u8,
             (bg.g() * 255.99) as u8,
             (bg.b() * 255.99) as u8,
             (bg.a() * 255.99) as u8,
-        );
-        let slc = [r, g, b, a];
+        ];
         for pixel in field_texture.data.chunks_exact_mut(4) {
             pixel.copy_from_slice(&slc);
         }
     }
     for ((x, y), e) in grid.iter() {
         let offset = (*x as usize + (grid.ysize - *y as usize - 1) * grid.xsize) * 4;
-
-        if let Ok(entity) = particle_query.get(*e) {
-            let pix = entity.0;
-            field_texture.data[offset] = (pix.r() * 255.99) as u8;
-            field_texture.data[offset + 1] = (pix.g() * 255.99) as u8;
-            field_texture.data[offset + 2] = (pix.b() * 255.99) as u8;
-            field_texture.data[offset + 3] = (pix.a() * 255.99) as u8;
-        }
+        field_texture.data[offset..(offset + 4)].copy_from_slice(&e.1);
     }
 
 
