@@ -14,9 +14,6 @@ pub fn wrap(mut i: i32, lower: i32, upper: i32) -> i32 {
     lower + (i - lower) % range_size
 }
 
-pub fn wrap_range(mut hi: i32 , mut low: i32 , lower: i32 , upper: i32) -> impl Iterator<Item = i32>{
-}
-
 #[inline]
 pub fn window_size_to_scale(width: usize, height: usize) -> f32 {
     if width == 0 || height == 0 {
