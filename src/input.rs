@@ -193,5 +193,4 @@ fn add_particle(
     if let Some(e) = commands.current_entity(){
         grid.set(x , y , e , color);
     }
-
 }

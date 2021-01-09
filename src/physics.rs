@@ -17,8 +17,10 @@ pub struct Position {
     pub pos: Vec2,
 }
 
+
 const GRAVITY: Vec2 = bevy::math::const_vec2!([0., -2. / 60.]);
 const MAX_V: Vec2 = bevy::math::const_vec2!([0., 8.]);
+
 
 impl Position {
     pub fn new(x: f32, y: f32) -> Self {
@@ -49,7 +51,9 @@ pub fn grid_update(
     mut grid: ResMut<Grid>,
     mut particles: Query<(&mut Particle, &mut Position, Entity)>,
 ) {
+
     let grid = &mut *grid;
+
     for (mut particle, mut position, _) in particles.iter_mut() {
         if particle.behavior == Behavior::Static {
             continue;

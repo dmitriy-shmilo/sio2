@@ -33,7 +33,9 @@ pub fn grid_render(
     }
 
     let field_texture = textures.get_mut(handle.unwrap()).unwrap();
+
     field_texture.data.copy_from_slice(&grid.texture.data);
+
 
 
     if tool.current_tool != Tool::None {

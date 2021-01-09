@@ -20,6 +20,7 @@ fn color_to_bytes(color: Color) -> [u8; 4] {
         (color.b() * 255.99) as u8,
         (color.a() * 255.99) as u8,
     ]
+
 }
 
 impl Default for Grid {
