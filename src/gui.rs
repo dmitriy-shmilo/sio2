@@ -1,23 +1,22 @@
 use bevy::{
-    diagnostic::{ FrameTimeDiagnosticsPlugin, Diagnostics },
-    prelude::*
+    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
+    prelude::*,
 };
 
 pub struct FpsState {
-    pub is_visible: bool
+    pub is_visible: bool,
 }
 
 impl Default for FpsState {
     fn default() -> Self {
-        FpsState {
-            is_visible: false
-        }
+        FpsState { is_visible: false }
     }
 }
 
-pub fn display_framerate(diagnostics: Res<Diagnostics>,
-    mut query: Query<(&mut Text, &mut Draw, &FpsState)>) {
-
+pub fn display_framerate(
+    diagnostics: Res<Diagnostics>,
+    mut query: Query<(&mut Text, &mut Draw, &FpsState)>,
+) {
     let mut average_fps = None;
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         average_fps = fps.average();

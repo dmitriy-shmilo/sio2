@@ -1,36 +1,30 @@
-use crate::{
-    FIELD_WIDTH_F32,
-    FIELD_HEIGHT_F32,
-    grid::Grid
-};
+use crate::{grid::Grid, FIELD_HEIGHT_F32, FIELD_WIDTH_F32};
 use bevy::prelude::*;
-use lazy_static::lazy_static;
 
 #[derive(PartialEq)]
 pub enum Behavior {
     Static,
     Solid,
-    Liquid
+    Liquid,
 }
 
 pub struct Particle {
     pub behavior: Behavior,
-    pub v: Vec2
+    pub v: Vec2,
 }
 
 pub struct Position {
-    pub pos: Vec2
+    pub pos: Vec2,
 }
 
-lazy_static! {
-    static ref GRAVITY: Vec2 = Vec2::new(0., -2. / 60.);
-    static ref MAX_V: Vec2 = Vec2::new(0., 8.);
-}
+const GRAVITY: Vec2 = bevy::math::const_vec2!([0. , -2. / 60.]);
+const MAX_V: Vec2 = bevy::math::const_vec2!([0. , 8.]);
+
 
 impl Position {
     pub fn new(x: f32, y: f32) -> Self {
         Position {
-            pos: Vec2::new(x, y)
+            pos: Vec2::new(x, y),
         }
     }
 }
@@ -39,7 +33,7 @@ impl Default for Particle {
     fn default() -> Self {
         Particle {
             behavior: Behavior::Static,
-            v: Vec2::zero()
+            v: Vec2::zero(),
         }
     }
 }
@@ -47,15 +41,16 @@ impl Default for Particle {
 impl Default for Position {
     fn default() -> Self {
         Position {
-            pos: Vec2::new(f32::NAN, f32::NAN)
+            pos: Vec2::new(f32::NAN, f32::NAN),
         }
     }
 }
 
-pub fn grid_update(mut grid: ResMut<Grid>,
-    mut particles: Query<(&mut Particle, &mut Position, Entity)>) {
-    for (mut particle, mut position, entity) in particles.iter_mut() {
-
+pub fn grid_update(
+    mut grid: ResMut<Grid>,
+    mut particles: Query<(&mut Particle, &mut Position, Entity)>,
+) {
+    for (mut particle, mut position, _) in particles.iter_mut() {
         if particle.behavior == Behavior::Static {
             continue;
         }
@@ -67,7 +62,7 @@ pub fn grid_update(mut grid: ResMut<Grid>,
         // source grid coordinates
         let (sx, sy) = (pos.x().round() as i32, pos.y().round() as i32);
 
-        v += *GRAVITY;
+        v += GRAVITY;
 
         if v.y() < -MAX_V.y() {
             v.set_y(-MAX_V.y());
@@ -86,7 +81,7 @@ pub fn grid_update(mut grid: ResMut<Grid>,
         // TODO: implement upward movement
         let mut obstacle = None;
         for y in (ty..sy).rev() {
-            if let Some(e) = grid[(sx, y)] {
+            if let Some(e) = grid.get(sx, y) {
                 obstacle = Some(e);
                 cy = y + 1;
                 break;
@@ -95,20 +90,20 @@ pub fn grid_update(mut grid: ResMut<Grid>,
 
         if obstacle != None {
             // attempt to drop diagonally
-            if grid[(cx - 1, cy - 1)] == None {
+            if grid.get(cx - 1, cy - 1) == None {
                 cx -= 1;
                 cy -= 1;
-            } else if grid[(cx + 1, cy - 1)] == None {
+            } else if grid.get(cx + 1, cy - 1) == None {
                 cx += 1;
                 cy -= 1;
             } else if particle.behavior == Behavior::Liquid {
                 // TODO: find a way to read and modify obstacle's velocity
                 v = Vec2::zero();
-                
+
                 // liquids can attempt to move sideways
-                if grid[(cx - 1, cy)] == None {
+                if grid.get(cx - 1, cy) == None {
                     cx -= 1;
-                } else if grid[(cx + 1, cy)] == None {
+                } else if grid.get(cx + 1, cy) == None {
                     cx += 1;
                 }
             } else {
@@ -134,7 +129,6 @@ pub fn grid_update(mut grid: ResMut<Grid>,
 
         particle.v = v;
         position.pos = pos;
-        grid[(sx, sy)] = None;
-        grid[(cx, cy)] = Some(entity);
+        grid.swap(sx, sy, cx, cy);
     }
 }

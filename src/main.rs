@@ -1,31 +1,27 @@
-mod gui;
-mod render;
 mod grid;
+mod gui;
 mod input;
 mod physics;
+mod render;
 mod util;
 
 use crate::{
-    input::{ Tool, ToolState, InputState, spawn_particle, handle_input},
-    render::{ GridTexture, grid_scale, grid_render },
     grid::Grid,
-    gui::{ FpsState, display_framerate },
+    gui::{display_framerate, FpsState},
+    input::{handle_input, spawn_particle, InputState, Tool, ToolState},
     physics::grid_update,
-    util::window_size_to_scale
+    render::{grid_render, grid_scale, GridTexture},
+    util::window_size_to_scale,
 };
 
-use bevy::{
-    diagnostic::{ FrameTimeDiagnosticsPlugin },
-    prelude::*,
-    render::texture::{ TextureFormat }
-};
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, render::texture::TextureFormat};
 
-const WINDOW_HEIGHT : u32 = 800;
-const WINDOW_WIDTH : u32 = 800;
-const FIELD_WIDTH : usize = 200;
-const FIELD_HEIGHT : usize = 200;
-const FIELD_WIDTH_F32 : f32 = FIELD_WIDTH as f32;
-const FIELD_HEIGHT_F32 : f32 = FIELD_HEIGHT as f32;
+const WINDOW_HEIGHT: u32 = 800;
+const WINDOW_WIDTH: u32 = 800;
+const FIELD_WIDTH: usize = 200;
+const FIELD_HEIGHT: usize = 200;
+const FIELD_WIDTH_F32: f32 = FIELD_WIDTH as f32;
+const FIELD_HEIGHT_F32: f32 = FIELD_HEIGHT as f32;
 
 fn main() {
     App::build()
@@ -47,25 +43,28 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, 
+fn setup(
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut textures: ResMut<Assets<Texture>>) {
-
-    let font = asset_server
-        .load("fonts/FiraSans-Bold.ttf");
+    mut textures: ResMut<Assets<Texture>>,
+) {
+    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
 
     let texture = Texture::new_fill(
         Vec2::new(FIELD_WIDTH_F32, FIELD_HEIGHT_F32),
         &[0, 0, 0, 0],
-        TextureFormat::Rgba8Unorm
+        TextureFormat::Rgba8Unorm,
     );
     let th = textures.add(texture);
 
-    let scale = Vec3::splat(window_size_to_scale(WINDOW_WIDTH as usize,
-        WINDOW_HEIGHT as usize));
+    let scale = Vec3::splat(window_size_to_scale(
+        WINDOW_WIDTH as usize,
+        WINDOW_HEIGHT as usize,
+    ));
 
-    commands.spawn(Camera2dComponents::default())
+    commands
+        .spawn(Camera2dComponents::default())
         .spawn(UiCameraComponents::default())
         .spawn(TextComponents {
             style: Style {
