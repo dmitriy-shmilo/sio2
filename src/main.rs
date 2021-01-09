@@ -22,6 +22,8 @@ const FIELD_WIDTH: usize = 200;
 const FIELD_HEIGHT: usize = 200;
 const FIELD_WIDTH_F32: f32 = FIELD_WIDTH as f32;
 const FIELD_HEIGHT_F32: f32 = FIELD_HEIGHT as f32;
+const TEXTURE_TYPE: TextureFormat = TextureFormat::Rgba8Unorm;
+const TEXTURE_STRIDE: usize = 4;
 
 fn main() {
     App::build()
@@ -54,7 +56,7 @@ fn setup(
     let texture = Texture::new_fill(
         Vec2::new(FIELD_WIDTH_F32, FIELD_HEIGHT_F32),
         &[0, 0, 0, 0],
-        TextureFormat::Rgba8Unorm,
+        TEXTURE_TYPE,
     );
     let th = textures.add(texture);
 
