@@ -1,4 +1,4 @@
-use crate::{grid::Grid, grid::GridCursor, FIELD_HEIGHT_F32, FIELD_WIDTH_F32};
+use crate::{grid::Grid, FIELD_HEIGHT_F32, FIELD_WIDTH_F32};
 use bevy::prelude::*;
 
 #[derive(PartialEq)]
