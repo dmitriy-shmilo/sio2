@@ -190,7 +190,7 @@ fn add_particle(
     }
 
     commands.spawn((particle, color, Position::new(x as f32, y as f32)));
-    if let Some(e) = commands.current_entity(){
-        grid.set(x , y , e , color);
+    if let Some(e) = commands.current_entity() {
+        grid.set(x, y, e, color);
     }
 }

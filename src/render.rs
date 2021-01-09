@@ -36,8 +36,6 @@ pub fn grid_render(
 
     field_texture.data.copy_from_slice(&grid.texture.data);
 
-
-
     if tool.current_tool != Tool::None {
         let (cx, cy) = (tool.grid_x as i32, tool.grid_y as i32);
 

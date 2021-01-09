@@ -25,7 +25,6 @@ const FIELD_HEIGHT_F32: f32 = FIELD_HEIGHT as f32;
 const TEXTURE_TYPE: TextureFormat = TextureFormat::Rgba8Unorm;
 const TEXTURE_STRIDE: usize = 4;
 
-
 fn main() {
     App::build()
         .add_resource(WindowDescriptor {
@@ -58,7 +57,6 @@ fn setup(
         Vec2::new(FIELD_WIDTH_F32, FIELD_HEIGHT_F32),
         &[0, 0, 0, 0],
         TEXTURE_TYPE,
-
     );
     let th = textures.add(texture);
 
