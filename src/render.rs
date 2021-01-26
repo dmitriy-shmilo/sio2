@@ -33,23 +33,8 @@ pub fn grid_render(
     }
 
     let field_texture = textures.get_mut(handle.unwrap()).unwrap();
-    let bg = grid.background_color;
-    {
-        let slc = [
-            (bg.r() * 255.99) as u8,
-            (bg.g() * 255.99) as u8,
-            (bg.b() * 255.99) as u8,
-            (bg.a() * 255.99) as u8,
-        ];
-        for pixel in field_texture.data.chunks_exact_mut(4) {
-            pixel.copy_from_slice(&slc);
-        }
-    }
-    for ((x, y), e) in grid.iter() {
-        let offset = (*x as usize + (grid.ysize - *y as usize - 1) * grid.xsize) * 4;
-        field_texture.data[offset..(offset + 4)].copy_from_slice(&e.1);
-    }
 
+    field_texture.data.copy_from_slice(&grid.texture.data);
 
     if tool.current_tool != Tool::None {
         let (cx, cy) = (tool.grid_x as i32, tool.grid_y as i32);
