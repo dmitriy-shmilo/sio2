@@ -2,7 +2,7 @@ use crate::{
     grid::Grid,
     gui::FpsState,
     physics::{Behavior, Particle, Position},
-    FIELD_HEIGHT_F32, FIELD_WIDTH_F32,
+    FIELD_HEIGHT, FIELD_WIDTH,
 };
 use bevy::{
     input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
@@ -19,13 +19,6 @@ pub enum Tool {
     Sand,
     Water,
     Eraser,
-}
-
-#[derive(Default)]
-pub struct InputState {
-    mouse_button: EventReader<MouseButtonInput>,
-    mouse_move: EventReader<CursorMoved>,
-    keyboard: EventReader<KeyboardInput>,
 }
 
 #[derive(Debug)]
@@ -51,20 +44,19 @@ impl Default for ToolState {
 
 pub fn handle_input(
     mut tool_state: ResMut<ToolState>,
-    mut input: ResMut<InputState>,
     windows: Res<Windows>,
-    cursor_moved: Res<Events<CursorMoved>>,
-    mouse_button: Res<Events<MouseButtonInput>>,
-    key_pressed: Res<Events<KeyboardInput>>,
+    mut cursor_moved: EventReader<CursorMoved>,
+    mut mouse_button: EventReader<MouseButtonInput>,
+    mut key_pressed: EventReader<KeyboardInput>,
     mut fps_state: Query<&mut FpsState>,
 ) {
     let window = windows.get_primary().unwrap();
     let scale = if window.width() < window.height() {
-        window.width() as f32 / FIELD_WIDTH_F32
+        window.width() as f32 / FIELD_WIDTH as f32
     } else {
-        window.height() as f32 / FIELD_HEIGHT_F32
+        window.height() as f32 / FIELD_HEIGHT as f32
     };
-    let (gw, gh) = (scale * FIELD_WIDTH_F32, scale * FIELD_HEIGHT_F32);
+    let (gw, gh) = (scale * FIELD_WIDTH as f32, scale * FIELD_HEIGHT as f32);
     let (pw, ph) = (
         (window.width() as f32 - gw) / 2.,
         (window.height() as f32 - gh) / 2.,
@@ -77,16 +69,16 @@ pub fn handle_input(
         ph,
     );
 
-    for event in input.mouse_button.iter(&mouse_button) {
+    for event in mouse_button.iter() {
         tool_state.is_spawning = event.state == ElementState::Pressed;
     }
 
-    for event in input.mouse_move.iter(&cursor_moved) {
-        let x = event.position.x();
-        let y = event.position.y();
+    for event in cursor_moved.iter() {
+        let x = event.position.x;
+        let y = event.position.y;
         if x > left && x < right && y > bottom && y < top {
-            let x = ((event.position.x() - left) / scale) as usize;
-            let y = ((event.position.y() - bottom) / scale) as usize;
+            let x = ((event.position.x - left) / scale) as usize;
+            let y = ((event.position.y - bottom) / scale) as usize;
             tool_state.grid_x = x;
             tool_state.grid_y = y;
         } else {
@@ -94,7 +86,7 @@ pub fn handle_input(
         }
     }
 
-    for event in input.keyboard.iter(&key_pressed) {
+    for event in key_pressed.iter() {
         if event.state.is_pressed() {
             if event.key_code == Some(KeyCode::Equals) {
                 tool_state.tool_size = min(tool_state.tool_size + 1, 3);
@@ -133,7 +125,7 @@ pub fn spawn_particle(mut commands: Commands, mut grid: ResMut<Grid>, tool: Res<
             for y in cy - tool.tool_size..=cy + tool.tool_size {
                 if tool.current_tool == Tool::Eraser {
                     if let Some(e) = grid.remove(x, y) {
-                        commands.despawn(e);
+                        commands.entity(e).despawn();
                     }
                     continue;
                 }
@@ -189,8 +181,8 @@ fn add_particle(
         return;
     }
 
-    commands.spawn((particle, color, Position::new(x as f32, y as f32)));
-    if let Some(e) = commands.current_entity() {
-        grid.set(x, y, e, color);
-    }
+    let e = commands
+        .spawn_bundle((particle, color, Position::new(x as f32, y as f32)))
+        .id();
+    grid.set(x, y, e, color);
 }

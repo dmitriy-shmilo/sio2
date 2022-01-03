@@ -1,13 +1,14 @@
-use crate::{grid::Grid, FIELD_HEIGHT_F32, FIELD_WIDTH_F32};
+use crate::{grid::Grid, FIELD_HEIGHT, FIELD_WIDTH};
 use bevy::prelude::*;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Behavior {
     Static,
     Solid,
     Liquid,
 }
 
+#[derive(Debug)]
 pub struct Particle {
     pub behavior: Behavior,
     pub v: Vec2,
@@ -61,20 +62,20 @@ pub fn grid_update(
         let mut v = particle.v;
 
         // source grid coordinates
-        let (sx, sy) = (pos.x().round() as i32, pos.y().round() as i32);
+        let (sx, sy) = (pos.x.round() as i32, pos.y.round() as i32);
 
         v += GRAVITY;
 
-        if v.y() < -MAX_V.y() {
-            v.set_y(-MAX_V.y());
-        } else if v.y() > MAX_V.y() {
-            v.set_y(MAX_V.y());
+        if v.y < -MAX_V.y {
+            v.y = -MAX_V.y;
+        } else if v.y > MAX_V.y {
+            v.y = MAX_V.y;
         }
 
         pos += particle.v;
 
         // target grid coordinates, where the particle wants to go
-        let (_tx, ty) = (pos.x().round() as i32, pos.y().round() as i32);
+        let (_tx, ty) = (pos.x.round() as i32, pos.y.round() as i32);
         // current grid coordinates, where the particle will actually end up
         let (mut cx, mut cy) = (sx, ty);
 
@@ -99,7 +100,7 @@ pub fn grid_update(
                 cy -= 1;
             } else if particle.behavior == Behavior::Liquid {
                 // TODO: find a way to read and modify obstacle's velocity
-                v = Vec2::zero();
+                v = Vec2::ZERO;
 
                 // liquids can attempt to move sideways
                 if grid.get(cx - 1, cy) == None {
@@ -109,22 +110,22 @@ pub fn grid_update(
                 }
             } else {
                 // TODO: find a way to read and modify obstacle's velocity
-                v = Vec2::zero();
+                v = Vec2::ZERO;
             }
 
-            pos.set_x(cx as f32);
-            pos.set_y(cy as f32);
+            pos.y = (cx as f32);
+            pos.y = (cy as f32);
         } else {
-            if pos.x() < 0.0 {
-                pos.set_x(FIELD_WIDTH_F32 + pos.x());
-            } else if pos.x() > FIELD_WIDTH_F32 {
-                pos.set_x(pos.x() - FIELD_WIDTH_F32);
+            if pos.x < 0.0 {
+                pos.x = (FIELD_WIDTH as f32 + pos.x);
+            } else if pos.x > FIELD_WIDTH as f32 {
+                pos.x = (pos.x - FIELD_WIDTH as f32);
             }
 
-            if pos.y() < 0.0 {
-                pos.set_y(FIELD_HEIGHT_F32 + pos.y());
-            } else if pos.y() > FIELD_HEIGHT_F32 {
-                pos.set_y(pos.y() - FIELD_HEIGHT_F32);
+            if pos.y < 0.0 {
+                pos.y = (FIELD_HEIGHT as f32 + pos.y);
+            } else if pos.y > FIELD_HEIGHT as f32 {
+                pos.y = (pos.y - FIELD_HEIGHT as f32);
             }
         }
 
