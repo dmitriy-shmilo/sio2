@@ -1,10 +1,9 @@
-use crate::{
-    util::wrap, FIELD_HEIGHT, FIELD_HEIGHT_F32, FIELD_WIDTH, FIELD_WIDTH_F32, TEXTURE_STRIDE,
-    TEXTURE_TYPE,
-};
+use crate::{util::wrap, FIELD_HEIGHT, FIELD_WIDTH, TEXTURE_STRIDE, TEXTURE_TYPE};
 
 use bevy::prelude::*;
 use bevy::render::texture::Texture;
+
+#[derive(Debug)]
 pub struct Grid {
     particles: Vec<Option<Entity>>,
     pub xsize: usize,
@@ -21,7 +20,7 @@ fn color_to_bytes(color: Color) -> [u8; 4] {
         (color.a() * 255.99) as u8,
     ]
 }
-
+use bevy::render::texture::{Extent3d, TextureDimension};
 impl Default for Grid {
     fn default() -> Self {
         let bg = color_to_bytes(Color::rgb(0.11, 0.11, 0.11));
@@ -31,7 +30,8 @@ impl Default for Grid {
             ysize: FIELD_HEIGHT,
             background_color: bg,
             texture: Texture::new_fill(
-                Vec2::new(FIELD_WIDTH_F32, FIELD_HEIGHT_F32),
+                Extent3d::new(FIELD_WIDTH as _, FIELD_HEIGHT as _, 1),
+                TextureDimension::D2,
                 &bg,
                 TEXTURE_TYPE,
             ),

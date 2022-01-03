@@ -24,8 +24,8 @@ pub fn display_framerate(
 
     for (mut text, mut draw, state) in &mut query.iter_mut() {
         if let Some(average_fps) = average_fps {
-            text.value = format!("FPS: {:.2}", average_fps);
-            draw.is_visible = state.is_visible;
+            // text.value = format!("FPS: {:.2}", average_fps);
+            // draw.is_visible = state.is_visible;
         }
     }
 }

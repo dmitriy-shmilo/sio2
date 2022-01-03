@@ -5,6 +5,7 @@ use crate::{
     util::wrap,
 };
 use crate::{window_size_to_scale, FIELD_HEIGHT, FIELD_WIDTH};
+use bevy::app::Events;
 use bevy::{prelude::*, window::WindowResized};
 use lazy_static::lazy_static;
 
@@ -64,7 +65,7 @@ pub fn grid_scale(
         .last();
 
     if let Some((width, height)) = window_resize {
-        let scale = Vec3::splat(window_size_to_scale(width, height));
+        let scale = Vec3::splat(window_size_to_scale(width as usize, height as usize));
         for (_, mut trans) in &mut query.iter_mut() {
             trans.scale = scale;
         }

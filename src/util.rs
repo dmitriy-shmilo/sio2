@@ -1,7 +1,7 @@
 // Fits `i` into `lower..upper` range, wrapping its value around
 // if necessary.
 // See https://stackoverflow.com/a/707426/575979
-use crate::{FIELD_HEIGHT_F32, FIELD_WIDTH_F32};
+use crate::{FIELD_HEIGHT, FIELD_WIDTH};
 
 #[inline]
 pub fn wrap(mut i: i32, lower: i32, upper: i32) -> i32 {
@@ -19,9 +19,9 @@ pub fn window_size_to_scale(width: usize, height: usize) -> f32 {
     if width == 0 || height == 0 {
         1.
     } else if width < height {
-        width as f32 / FIELD_WIDTH_F32
+        width as f32 / FIELD_WIDTH as f32
     } else {
-        height as f32 / FIELD_HEIGHT_F32
+        height as f32 / FIELD_HEIGHT as f32
     }
 }
 
